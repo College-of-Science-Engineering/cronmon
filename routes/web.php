@@ -10,14 +10,6 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/logout', function () {
-    Auth::logout();
-    return redirect('/');
-})->name('auth.logout');
-
-// Public API endpoint for check-ins (no authentication required)
-Route::match(['get', 'post'], '/ping/{token}', PingController::class)->name('api.ping');
-
 // TEMPORARY: Auto-login as first user for development
 // TODO: Remove this before production!
 // if (! app()->environment('testing')) {
@@ -25,6 +17,11 @@ Route::match(['get', 'post'], '/ping/{token}', PingController::class)->name('api
 //        Auth::login(User::first());
 //    }
 //}
+require __DIR__ . '/sso-auth.php';
+
+// Public API endpoint for check-ins (no authentication required)
+Route::match(['get', 'post'], '/ping/{token}', PingController::class)->name('api.ping');
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
