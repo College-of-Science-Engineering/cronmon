@@ -197,15 +197,15 @@ Manages team membership.
 - [x] Schedule command in `routes/console.php` (runs every minute)
 
 ### Testing
-- [x] Write feature tests for Index CRUD operations (5 tests passing)
-- [x] Write feature tests for Create operations (6 tests passing)
-- [x] Write feature tests for Edit operations (11 tests passing)
-- [x] Write feature tests for Show operations (23 tests passing)
-- [x] Write feature tests for check-in API (13 tests passing)
-- [x] Write feature tests for schedule calculator service (15 tests passing)
-- [x] Write feature tests for missed task detection & alerts (10 tests passing)
-- [x] Write feature tests for team-based authorization (22 tests passing)
-- [x] Run test suite for all Phase 1 features (107/107 tests passing, 220 assertions)
+- [x] Write feature tests for Index CRUD operations
+- [x] Write feature tests for Create operations
+- [x] Write feature tests for Edit operations
+- [x] Write feature tests for Show operations
+- [x] Write feature tests for check-in API
+- [x] Write feature tests for schedule calculator service
+- [x] Write feature tests for missed task detection & alerts
+- [x] Write feature tests for team-based authorization
+- [x] Run test suite for all Phase 1 features
 
 ## Development Notes & Lessons Learned
 
@@ -266,7 +266,6 @@ Manages team membership.
   - Alerts tab (empty state, alerts table, alert types, acknowledgment status)
   - Pagination limits (20 most recent runs/alerts)
   - Navigation (edit button, back to list button)
-- **Final Phase 1 UI Test Count:** 47 tests with 109 assertions, all passing!
 - **Milestone:** All Phase 1 Livewire UI components now have complete test coverage.
 
 **9. Implemented Ping API Endpoint (2025-10-24)**
@@ -292,7 +291,6 @@ Manages team membership.
   - No authentication requirement
   - Status updates
   - Edge cases
-- **Final Test Count:** 60 tests with 136 assertions, all passing!
 - **Future Work:** Background jobs to calculate expected_at times and detect late/missed runs.
 
 **10. Implemented Background Processing & Alert System (2025-10-24 AM)**
@@ -327,7 +325,6 @@ Manages team membership.
   - Alert creation (missed, late, recovered)
   - Email sending to multiple team members
   - Edge cases (paused tasks, never checked-in, duplicates)
-- **Final Test Count:** 85 tests with 188 assertions, all passing! 🎉
 - **TODO:** Add command to Laravel scheduler in `routes/console.php`
 
 **11. Completed Phase 1.5 UI Polish (2025-10-24 PM)**
@@ -364,7 +361,6 @@ Manages team membership.
     4. "Cache Warmup" - paused with old history
   - 60 total task runs with realistic execution times (45-180s for backups, 2-8s for queue)
   - 3 alerts (missed, late, recovered) for testing alert UI
-- **Final Test Count:** 85 tests with 188 assertions, all passing! ✅
 - **Browser Testing:** All UI improvements verified working correctly across different task statuses
 
 **12. Completed Phase 1 Final Cleanup (2025-10-25)**
@@ -385,7 +381,6 @@ Manages team membership.
     - Denial of unauthorized access
     - viewAny and create permissions for all authenticated users
   - All tests follow team conventions (Arrange, Act, Assert pattern)
-- **Final Test Count:** 107 tests with 220 assertions, all passing! 🎉
 - **Phase 1 Status:** Fully production-ready with complete test coverage and authorization!
 
 **13. Refactored Ping Endpoint to Use Queue (2025-10-25)**
@@ -403,6 +398,75 @@ Manages team membership.
   - More resilient to load
 - **Testing:** Tests continue to pass with zero modifications thanks to `sync` queue driver in `phpunit.xml`
 - **Code Quality:** Clean separation of concerns - controller handles HTTP, job handles business logic
+
+**14. Implemented Dashboard with Clickable Status Cards (2025-10-25)**
+- **Achievement:** Created home page dashboard showing task health overview with actionable status cards.
+- **Features Implemented:**
+  - Status count cards for ok, alerting, pending, and paused tasks
+  - Clickable cards that link to filtered All Tasks page
+  - Recent alerts section (last 10 with type badges)
+  - Recent check-ins section (last 10 with late/on-time badges)
+  - All data scoped to user's teams only
+  - Dashboard set as home route (/)
+  - Updated sidebar navigation
+- **UI Components Used:**
+  - Flux cards for status counts with color-coded text
+  - Flux badges for alert types and check-in status
+  - Empty states for no alerts/check-ins
+  - Links with wire:navigate for SPA-like navigation
+
+**15. Added Interactive Filter Pills to All Tasks Page (2025-10-25)**
+- **Achievement:** Enhanced task filtering with user-friendly pill-based filter UI.
+- **Features Implemented:**
+  - Flux radio.group with pills variant (requires Flux Pro)
+  - Three filter options: All, Alerting, Paused
+  - wire:model.live for instant filtering without page reload
+  - #[Url] attribute maintains filter state in URL
+  - Contextual empty state messages for each filter
+  - Filter works seamlessly with existing team filtering
+- **Benefits:**
+  - More intuitive than dropdown or links
+  - Visual indication of active filter
+  - URL shareable with filter applied
+  - Clean, modern UI matching Flux design system
+
+**16. Implemented Team Filtering on All Tasks Page (2025-10-25)**
+- **Achievement:** Added team filter dropdown to All Tasks page for multi-team users.
+- **Features Implemented:**
+  - Flux select component showing user's teams
+  - #[Url] attribute for URL-persistent filtering
+  - wire:model.live for instant updates
+  - Combines seamlessly with status filter
+  - Shows only teams user is a member of
+  - "All Teams" option to clear filter
+- **Implementation Details:**
+  - Added `team_id` property with #[Url] attribute to Index component
+  - Filter applied in query with `where('team_id', $this->team_id)`
+  - Passes user's teams to view for dropdown population
+  - Fixed Flux select syntax: `flux:select.option` not `flux:option`
+- **Learning:** Used logging instead of tinker for debugging to avoid creating test records in database
+- **Tool Discovery:** Laravel Boost `read-log-entries` tool very helpful for viewing application logs during debugging
+
+**17. Added API Documentation to Task Show Page (2025-10-25)**
+- **Achievement:** Embedded contextual API examples directly on task show page with real, copy-paste ready URLs.
+- **Features Implemented:**
+  - **Quick Start on Details Tab** - Simple curl GET example with Flux copyable input as first item
+  - **New API Tab** with comprehensive examples:
+    - Basic GET Request (copyable input)
+    - POST with JSON Data (textarea, multi-line with backslashes)
+    - From Your Cron Job (textarea, showing `&&` pattern)
+  - **getPingUrl() helper method** on ScheduledTask model for URL reuse
+  - All examples use actual task's unique token - no editing needed
+- **UI Approach:**
+  - One-liner examples use `flux:input readonly copyable` for easy copying
+  - Multi-line examples use `flux:textarea readonly` for full visibility
+  - Removed PowerShell-specific examples (modern PowerShell includes curl.exe)
+- **Benefits:**
+  - No separate documentation page needed
+  - Contextual - examples appear right where users need them
+  - Copy-paste ready with real URLs
+  - Perfect for experienced sysadmins
+- **Test Coverage:** 3 new tests for API examples display
 
 ### General Approach
 - **Test-Driven Development:** Writing Pest tests BEFORE fixing bugs helped catch multiple issues and ensured the fixes actually worked.
@@ -497,7 +561,26 @@ Manages team membership.
 - ✅ Email notifications to team members
 - ✅ Beautiful, polished UI with charts and status callouts
 - ✅ Team-based authorization policies (ScheduledTaskPolicy & TeamPolicy)
-- ✅ 107 comprehensive tests with 220 assertions, all passing
+
+### Test Coverage
+**131 tests with 290 assertions, all passing! ✅**
+
+Test breakdown by feature:
+- **Unit Tests:** 1 test (example/sanity check)
+- **Ping API Endpoint:** 13 tests - GET/POST requests, data handling, authentication
+- **Missed Tasks Detection:** 10 tests - alert generation, email notifications, schedule detection
+- **Dashboard:** 13 tests - status counts, recent alerts/check-ins, team filtering
+- **Example/Route Tests:** 1 test - basic routing
+- **Authorization Policies:** 22 tests (11 ScheduledTask + 11 Team) - team membership checks
+- **Scheduled Tasks CRUD:** 55 tests
+  - Create: 6 tests - form validation, simple/cron schedules
+  - Edit: 11 tests - updates, validation, immutable fields
+  - Index: 13 tests - listing, deletion, status/team filtering, authorization
+  - Show: 25 tests - details/history/alerts/API tabs, charts, badges, pagination, API examples
+- **Schedule Calculator Service:** 15 tests - interval parsing, cron expressions, late detection
+- **Team Policy:** 11 tests - team membership authorization
+
+All tests follow team conventions with Arrange/Act/Assert pattern and use RefreshDatabase trait.
 
 ### Phase 1 Remaining Minor Tasks
 1. **Schedule Background Command** ✅
@@ -507,48 +590,58 @@ Manages team membership.
    - [x] Create `ScheduledTaskPolicy` (check team membership)
    - [x] Create `TeamPolicy` (check team membership)
    - [x] Register policies in `bootstrap/app.php` (auto-discovered by Laravel 12)
-   - [x] Write tests for ScheduledTaskPolicy authorization rules (11 tests)
-   - [x] Write tests for TeamPolicy authorization rules (11 tests)
-   - **Final Test Count:** 107 tests with 220 assertions, all passing! 🎉
+   - [x] Write tests for ScheduledTaskPolicy authorization rules
+   - [x] Write tests for TeamPolicy authorization rules
 
-## Phase 2 - Planning & Ideas for Tomorrow
+## Phase 2 - In Progress
 
-### Core Features to Consider
-1. **Dashboard** - Home page with overview of task health
+### Completed Features
+1. **Dashboard** ✅ - Home page with overview of task health
    - Count of tasks by status (ok, alerting, pending, paused)
-   - Recent alerts list
-   - Recent check-ins across all tasks
-   - Quick actions (create task, view alerting tasks)
+   - Clickable status cards that filter All Tasks page
+   - Recent alerts list (last 10)
+   - Recent check-ins across all tasks (last 10)
+   - Set as home route (/)
 
-2. **Alert Management**
+2. **Task Filtering Enhancements** ✅
+   - Interactive filter pills for status (All, Alerting, Paused)
+   - Team dropdown filter for multi-team users
+   - Both filters use #[Url] attribute for URL persistence
+   - Filters combine seamlessly together
+   - wire:model.live for instant updates
+
+3. **API Documentation** ✅ - Contextual examples on task show page
+   - Quick Start curl example on Details tab with copyable input
+   - Dedicated API tab with multi-line examples
+   - Real URLs with actual task tokens
+   - Examples for GET, POST with data, and cron job integration
+
+### Features to Consider
+
+1. **Alert Management**
    - Mark alerts as acknowledged (add button to Alerts tab)
    - Filter alerts by type/status
    - Alert history page (all alerts across all tasks)
    - Consider alert preferences per task or team
 
-3. **Team Management** (if needed)
+2. **Team Management** (if needed)
    - View team members
    - Invite users to teams
    - Create additional teams beyond personal team
    - Team settings page
 
-4. **API Documentation Page**
-   - How to use `/ping/{token}` endpoint
-   - Example curl commands
-   - Example cron job setups (Linux, Windows)
-   - Example with data field (JSON format)
-
-5. **User Settings**
+3. **User Settings**
    - Timezone preferences
    - Email notification preferences
    - API token management (for future authenticated APIs)
 
-### Questions to Discuss Tomorrow
-- Which Phase 2 feature would provide the most value first?
+### Questions to Discuss
+- Which remaining Phase 2 feature would provide the most value next?
 - Do we need team management at this stage, or defer it?
 - Should we add a "pause task" button to the UI?
 - Do we want alert acknowledgment functionality?
 - Should we add more chart types (late/on-time ratio, frequency histogram)?
+- Should we add an "ok" status filter to the pills, or keep just the three we have?
 
 ### Technical Improvements
 - Consider removing auto-login hack (add proper dev login page)
@@ -563,4 +656,4 @@ Manages team membership.
 - Document the alert system and email templates
 - Add deployment guide (queue workers, scheduler, etc.)
 
-**Current State:** Phase 1 is production-ready! The application successfully monitors cron jobs, detects missed runs, sends alerts, and provides a beautiful UI for management. Ready to discuss Phase 2 priorities tomorrow!
+**Current State:** Phase 1 complete and production-ready! Phase 2 in progress with dashboard and enhanced filtering complete. The application successfully monitors cron jobs, detects missed runs, sends alerts, and provides a beautiful, functional UI for management.

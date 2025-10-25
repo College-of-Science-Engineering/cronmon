@@ -462,3 +462,51 @@ it('has back to list button', function () {
         ->assertSee('Back to List')
         ->assertSee(route('tasks.index', [], false));
 });
+
+it('displays quick start curl command in details tab', function () {
+    // Arrange
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($user);
+    $task = ScheduledTask::factory()->create(['team_id' => $team->id]);
+
+    // Act & Assert
+    $this->actingAs($user)
+        ->get(route('tasks.show', $task))
+        ->assertSee('Quick Start')
+        ->assertSee('curl')
+        ->assertSee($task->getPingUrl());
+});
+
+it('has api tab with advanced examples', function () {
+    // Arrange
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($user);
+    $task = ScheduledTask::factory()->create(['team_id' => $team->id]);
+
+    // Act & Assert
+    $this->actingAs($user)
+        ->get(route('tasks.show', $task))
+        ->assertSee('API')
+        ->assertSee('Basic GET Request')
+        ->assertSee('POST with JSON Data')
+        ->assertSee('From Your Cron Job');
+});
+
+it('api tab displays actual task ping url in all examples', function () {
+    // Arrange
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($user);
+    $task = ScheduledTask::factory()->create(['team_id' => $team->id]);
+
+    $pingUrl = $task->getPingUrl();
+
+    // Act & Assert
+    $response = $this->actingAs($user)
+        ->get(route('tasks.show', $task));
+
+    // Should appear in Details tab (Quick Start) + API tab (3 examples) = 4 times
+    expect(substr_count($response->getContent(), $pingUrl))->toBe(4);
+});

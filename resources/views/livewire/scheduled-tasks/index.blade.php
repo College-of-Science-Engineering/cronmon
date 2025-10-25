@@ -6,17 +6,41 @@
                 New Task
             </flux:button>
         </div>
+
+        <div class="mt-4 flex items-center gap-4">
+            <span class="">
+                <flux:radio.group wire:model.live="status" variant="pills">
+                    <flux:radio value="" label="All" />
+                    <flux:radio value="alerting" label="Alerting" />
+                    <flux:radio value="paused" label="Paused" />
+                </flux:radio.group>
+            </span>
+            <flux:select wire:model.live="team_id" placeholder="All Teams" class="flex-1">
+                <flux:select.option value="">All Teams</flux:select.option>
+                @foreach($teams as $team)
+                    <flux:select.option value="{{ $team->id }}">{{ $team->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </div>
     </div>
 
     @if($tasks->isEmpty())
         <flux:card>
             <div class="text-center py-12">
                 <flux:icon.inbox class="mx-auto h-12 w-12 text-zinc-400" />
-                <flux:heading size="lg" class="mt-4">No tasks yet</flux:heading>
-                <flux:text class="mt-2">Get started by creating your first scheduled task.</flux:text>
-                <flux:button :href="route('tasks.create')" wire:navigate class="mt-6" icon="plus">
-                    Create Task
-                </flux:button>
+                @if($status === 'alerting')
+                    <flux:heading size="lg" class="mt-4">No alerting tasks</flux:heading>
+                    <flux:text class="mt-2">Great! All your tasks are running smoothly.</flux:text>
+                @elseif($status === 'paused')
+                    <flux:heading size="lg" class="mt-4">No paused tasks</flux:heading>
+                    <flux:text class="mt-2">You don't have any paused tasks.</flux:text>
+                @else
+                    <flux:heading size="lg" class="mt-4">No tasks yet</flux:heading>
+                    <flux:text class="mt-2">Get started by creating your first scheduled task.</flux:text>
+                    <flux:button :href="route('tasks.create')" wire:navigate class="mt-6" icon="plus">
+                        Create Task
+                    </flux:button>
+                @endif
             </div>
         </flux:card>
     @else

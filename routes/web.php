@@ -20,11 +20,11 @@ Route::match(['get', 'post'], '/ping/{token}', PingController::class)->name('api
 
 // TEMPORARY: Auto-login as first user for development
 // TODO: Remove this before production!
- if (! app()->environment('testing')) {
-    if (User::count() != 0) {
-        Auth::login(User::first());
-    }
-}
+// if (! app()->environment('testing')) {
+//    if (User::count() != 0) {
+//        Auth::login(User::first());
+//    }
+//}
 
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');

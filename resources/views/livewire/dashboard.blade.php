@@ -12,40 +12,48 @@
     {{-- Status Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {{-- OK Tasks --}}
-        <flux:card>
-            <div class="text-center">
-                <flux:text class="text-sm text-zinc-500">OK</flux:text>
-                <div class="text-4xl font-bold text-green-600 mt-2">{{ $okCount }}</div>
-                <flux:text class="text-sm mt-2">Tasks running smoothly</flux:text>
-            </div>
-        </flux:card>
+        <a href="{{ route('tasks.index', ['status' => 'ok']) }}" wire:navigate class="cursor-pointer">
+            <flux:card>
+                <div class="text-center">
+                    <flux:text class="text-sm text-zinc-500">OK</flux:text>
+                    <div class="text-4xl font-bold text-green-600 mt-2">{{ $okCount }}</div>
+                    <flux:text class="text-sm mt-2">Tasks running smoothly</flux:text>
+                </div>
+            </flux:card>
+        </a>
 
         {{-- Alerting Tasks --}}
-        <flux:card>
-            <div class="text-center">
-                <flux:text class="text-sm text-zinc-500">Alerting</flux:text>
-                <div class="text-4xl font-bold text-red-600 mt-2">{{ $alertingCount }}</div>
-                <flux:text class="text-sm mt-2">Tasks need attention</flux:text>
-            </div>
-        </flux:card>
+        <a href="{{ route('tasks.index', ['status' => 'alerting']) }}" wire:navigate class="cursor-pointer">
+            <flux:card>
+                <div class="text-center">
+                    <flux:text class="text-sm text-zinc-500">Alerting</flux:text>
+                    <div class="text-4xl font-bold text-red-600 mt-2">{{ $alertingCount }}</div>
+                    <flux:text class="text-sm mt-2">Tasks need attention</flux:text>
+                </div>
+            </flux:card>
+        </a>
 
         {{-- Pending Tasks --}}
-        <flux:card>
-            <div class="text-center">
-                <flux:text class="text-sm text-zinc-500">Pending</flux:text>
-                <div class="text-4xl font-bold text-yellow-600 mt-2">{{ $pendingCount }}</div>
-                <flux:text class="text-sm mt-2">Never checked in</flux:text>
-            </div>
-        </flux:card>
+        <a href="{{ route('tasks.index', ['status' => 'pending']) }}" wire:navigate class="cursor-pointer">
+            <flux:card>
+                <div class="text-center">
+                    <flux:text class="text-sm text-zinc-500">Pending</flux:text>
+                    <div class="text-4xl font-bold text-yellow-600 mt-2">{{ $pendingCount }}</div>
+                    <flux:text class="text-sm mt-2">Never checked in</flux:text>
+                </div>
+            </flux:card>
+        </a>
 
         {{-- Paused Tasks --}}
-        <flux:card>
-            <div class="text-center">
-                <flux:text class="text-sm text-zinc-500">Paused</flux:text>
-                <div class="text-4xl font-bold text-zinc-600 mt-2">{{ $pausedCount }}</div>
-                <flux:text class="text-sm mt-2">Monitoring disabled</flux:text>
-            </div>
-        </flux:card>
+        <a href="{{ route('tasks.index', ['status' => 'paused']) }}" wire:navigate class="cursor-pointer">
+            <flux:card>
+                <div class="text-center">
+                    <flux:text class="text-sm text-zinc-500">Paused</flux:text>
+                    <div class="text-4xl font-bold text-zinc-600 mt-2">{{ $pausedCount }}</div>
+                    <flux:text class="text-sm mt-2">Monitoring disabled</flux:text>
+                </div>
+            </flux:card>
+        </a>
     </div>
 
     {{-- Recent Activity - Two Column Layout --}}

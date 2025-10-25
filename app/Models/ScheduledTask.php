@@ -54,4 +54,9 @@ class ScheduledTask extends Model
     {
         return $this->hasMany(Alert::class);
     }
+
+    public function getPingUrl(): string
+    {
+        return route('api.ping', $this->unique_check_in_token);
+    }
 }

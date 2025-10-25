@@ -80,11 +80,20 @@
             <flux:tab name="details">Details</flux:tab>
             <flux:tab name="history">History</flux:tab>
             <flux:tab name="alerts">Alerts</flux:tab>
+            <flux:tab name="api">API</flux:tab>
         </flux:tabs>
 
         <flux:tab.panel name="details">
             <flux:card>
                 <div class="space-y-4">
+                    <div>
+                        <flux:heading size="sm">Quick Start</flux:heading>
+                        <flux:text class="mt-1 mb-2">Copy and paste this command to start monitoring this task:</flux:text>
+                        <flux:input value="curl {{ $task->getPingUrl() }}" readonly copyable />
+                    </div>
+
+                    <flux:separator />
+
                     <div>
                         <flux:heading size="sm">Team</flux:heading>
                         <flux:text class="mt-1">{{ $task->team->name }}</flux:text>
@@ -229,6 +238,38 @@
                     </flux:table.rows>
                 </flux:table>
             @endif
+        </flux:tab.panel>
+
+        <flux:tab.panel name="api">
+            <flux:card>
+                <div class="space-y-6">
+                    <div>
+                        <flux:heading size="sm">Basic GET Request</flux:heading>
+                        <flux:text class="mt-1 mb-2">Simple check-in with no additional data:</flux:text>
+                        <flux:input value="curl {{ $task->getPingUrl() }}" readonly copyable />
+                    </div>
+
+                    <flux:separator />
+
+                    <div>
+                        <flux:heading size="sm">POST with JSON Data</flux:heading>
+                        <flux:text class="mt-1 mb-2">Include custom data with your check-in (e.g., execution time, status, logs):</flux:text>
+                        <flux:textarea rows="3" readonly>curl -X POST {{ $task->getPingUrl() }} \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"execution_time":45,"status":"success"}}'</flux:textarea>
+                    </div>
+
+                    <flux:separator />
+
+                    <div>
+                        <flux:heading size="sm">From Your Cron Job</flux:heading>
+                        <flux:text class="mt-1 mb-2">Add this to the end of your cron job command:</flux:text>
+                        <flux:textarea rows="2" readonly>0 3 * * * /path/to/your/script.sh && \
+  curl {{ $task->getPingUrl() }}</flux:textarea>
+                        <flux:text class="mt-2 text-sm text-zinc-500">The && ensures the ping only happens if your script succeeds (exits with code 0).</flux:text>
+                    </div>
+                </div>
+            </flux:card>
         </flux:tab.panel>
     </flux:tab.group>
 </div>
