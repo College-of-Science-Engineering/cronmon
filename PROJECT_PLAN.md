@@ -746,5 +746,6 @@ All tests follow team conventions with Arrange/Act/Assert pattern and use Refres
 - Document the alert system and email templates
 - Add deployment guide (queue workers, scheduler, etc.)
 - When writing tests, cover both the visible outcome and the side effects (e.g., confirm records remain unchanged after validation errors) so regressions can’t hide behind surface-level assertions.
+- API endpoints should lean on form requests for validation, including payload size limits and strict JSON parsing, to avoid accidental abuse (for example, oversized ping payloads).
 
 **Current State:** Phase 1 complete and production-ready! Phase 2 in progress with dashboard, enhanced filtering, API documentation, and full team management complete (175 tests, 382 assertions). Alert management foundation complete (database schema, helper methods, tests). The application successfully monitors cron jobs, detects missed runs, sends alerts, and provides a beautiful, functional UI for management with complete team collaboration features.

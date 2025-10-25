@@ -26,5 +26,5 @@
 - [x] Add Livewire feature coverage for scheduled task create/edit flows, including validation failures and successful persistence.
 - [x] Create API/queue coverage for `/ping/{token}` that fakes the queue, asserts `RecordTaskCheckIn` dispatch, and confirms TaskRun/task status updates.
 - [x] Move the ping 404 test out of `tests/Feature/ExampleTest.php:4-9` and into the new ping feature test file.
-- [ ] Extend policy specs with explicit denials for restore/force delete (and any future abilities) so membership leaks are caught early.
+- [x] Extend policy specs with explicit denials for restore/force delete (and any future abilities) so membership leaks are caught early.
 - [ ] Mirror the existing Arrange/Act/Assert Pest conventions when adding new tests to avoid style drift.

@@ -157,3 +157,33 @@ it('allows user to force delete task from their team', function () {
     // Act & Assert
     expect($user->can('forceDelete', $task))->toBeTrue();
 });
+
+it('denies user from restoring task from another team', function () {
+    // Arrange
+    $userWithoutAccess = User::factory()->create();
+    $userWithAccess = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($userWithAccess);
+
+    $task = ScheduledTask::factory()->create([
+        'team_id' => $team->id,
+    ]);
+
+    // Act & Assert
+    expect($userWithoutAccess->can('restore', $task))->toBeFalse();
+});
+
+it('denies user from force deleting task from another team', function () {
+    // Arrange
+    $userWithoutAccess = User::factory()->create();
+    $userWithAccess = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($userWithAccess);
+
+    $task = ScheduledTask::factory()->create([
+        'team_id' => $team->id,
+    ]);
+
+    // Act & Assert
+    expect($userWithoutAccess->can('forceDelete', $task))->toBeFalse();
+});

@@ -121,3 +121,25 @@ it('allows user to force delete team they belong to', function () {
     // Act & Assert
     expect($user->can('forceDelete', $team))->toBeTrue();
 });
+
+it('denies user from restoring team they do not belong to', function () {
+    // Arrange
+    $userWithoutAccess = User::factory()->create();
+    $userWithAccess = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($userWithAccess);
+
+    // Act & Assert
+    expect($userWithoutAccess->can('restore', $team))->toBeFalse();
+});
+
+it('denies user from force deleting team they do not belong to', function () {
+    // Arrange
+    $userWithoutAccess = User::factory()->create();
+    $userWithAccess = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($userWithAccess);
+
+    // Act & Assert
+    expect($userWithoutAccess->can('forceDelete', $team))->toBeFalse();
+});

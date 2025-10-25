@@ -20,6 +20,13 @@ class TestDataSeeder extends Seeder
      */
     public function run(): void
     {
+        $admin = User::factory()->create([
+            'username' => 'admin2x',
+            'forenames' => 'Admin',
+            'surname' => 'Person',
+            'password' => bcrypt('secret'),
+            'email' => 'admin@example.com',
+        ]);
         $user1 = User::factory()->create([
             'username' => 'abc1x',
             'forenames' => 'Billy',
