@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RecordPingRequest;
 use App\Jobs\RecordTaskCheckIn;
 use App\Models\ScheduledTask;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class PingController extends Controller
 {
-    public function __invoke(Request $request, string $token): JsonResponse
+    public function __invoke(RecordPingRequest $request, string $token): JsonResponse
     {
         $task = ScheduledTask::where('unique_check_in_token', $token)->first();
 
@@ -21,7 +21,9 @@ class PingController extends Controller
         }
 
         // Dispatch job to record check-in
-        RecordTaskCheckIn::dispatch($task, $request->input('data'));
+        $validated = $request->validated();
+
+        RecordTaskCheckIn::dispatch($task, $validated['data'] ?? null);
 
         return response()->json([
             'message' => 'Check-in recorded',
