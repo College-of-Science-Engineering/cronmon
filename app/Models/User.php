@@ -58,8 +58,25 @@ class User extends Authenticatable
         return $this->belongsToMany(Team::class);
     }
 
+    public function personalTeam(): ?Team
+    {
+        return $this->teams()->where('teams.name', $this->username)->first();
+    }
+
     public function getNameAttribute(): string
     {
         return trim("{$this->forenames} {$this->surname}");
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (User $user) {
+            $team = Team::create([
+                'name' => $user->username,
+                'slug' => $user->username,
+            ]);
+
+            $team->users()->attach($user);
+        });
     }
 }

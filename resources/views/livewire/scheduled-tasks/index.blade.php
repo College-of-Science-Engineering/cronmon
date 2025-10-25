@@ -21,6 +21,7 @@
                     <flux:select.option value="{{ $team->id }}">{{ $team->name }}</flux:select.option>
                 @endforeach
             </flux:select>
+            <flux:switch wire:model.live="myTasksOnly" label="Only my tasks" />
         </div>
     </div>
 

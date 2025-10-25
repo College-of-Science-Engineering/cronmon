@@ -10,7 +10,7 @@ use function Pest\Livewire\livewire;
 
 uses(RefreshDatabase::class);
 
-it('displays tasks from users teams', function () {
+it('displays all tasks by default', function () {
     // Arrange
     $user = User::factory()->create();
     $team = Team::factory()->create();
@@ -29,7 +29,7 @@ it('displays tasks from users teams', function () {
         ->assertSee($team->name);
 });
 
-it('does not display tasks from teams user is not part of', function () {
+it('displays all tasks including those from teams user is not part of', function () {
     // Arrange
     $user = User::factory()->create();
     $userTeam = Team::factory()->create();
@@ -38,16 +38,16 @@ it('does not display tasks from teams user is not part of', function () {
     $otherTeam = Team::factory()->create();
     $otherTask = ScheduledTask::factory()->create([
         'team_id' => $otherTeam->id,
-        'name' => 'Secret Task',
+        'name' => 'Other Team Task',
     ]);
 
     // Act & Assert
     $this->actingAs($user)
         ->get('/tasks')
-        ->assertDontSee('Secret Task');
+        ->assertSee('Other Team Task');
 });
 
-it('displays empty state when user has no tasks', function () {
+it('displays empty state when there are no tasks in the system', function () {
     // Arrange
     $user = User::factory()->create();
     $team = Team::factory()->create();
@@ -196,7 +196,7 @@ it('displays empty state when filter has no matching tasks', function () {
         ->assertSee('Great! All your tasks are running smoothly');
 });
 
-it('filters out tasks from other teams even with filter', function () {
+it('shows all tasks from all teams when filtered by status', function () {
     // Arrange
     $user = User::factory()->create();
     $userTeam = Team::factory()->create();
@@ -220,7 +220,7 @@ it('filters out tasks from other teams even with filter', function () {
     $this->actingAs($user)
         ->get('/tasks?status=alerting')
         ->assertSee('My Alert')
-        ->assertDontSee('Other Alert');
+        ->assertSee('Other Alert');
 });
 
 it('can filter tasks by team via URL', function () {
@@ -322,7 +322,7 @@ it('can combine status and team filters', function () {
         ->assertDontSee('Team2 Alert');
 });
 
-it('only shows teams user is a member of in filter', function () {
+it('only shows teams user is a member of in team filter dropdown', function () {
     // Arrange
     $user = User::factory()->create();
     $userTeam = Team::factory()->create(['name' => 'My Team']);
@@ -335,4 +335,104 @@ it('only shows teams user is a member of in filter', function () {
     livewire(Index::class)
         ->assertSee('My Team')
         ->assertDontSee('Other Team');
+});
+
+it('can filter to only personal team tasks via myTasksOnly toggle', function () {
+    // Arrange
+    $user = User::factory()->create(['username' => 'alice']);
+
+    $otherTeam = Team::factory()->create(['name' => 'Engineering']);
+    $otherTeam->users()->attach($user);
+
+    $personalTask = ScheduledTask::factory()->create([
+        'team_id' => $user->personalTeam()->id,
+        'name' => 'My Personal Task',
+    ]);
+
+    $otherTask = ScheduledTask::factory()->create([
+        'team_id' => $otherTeam->id,
+        'name' => 'Team Task',
+    ]);
+
+    // Act & Assert
+    $this->actingAs($user);
+
+    livewire(Index::class)
+        ->set('myTasksOnly', true)
+        ->assertSee('My Personal Task')
+        ->assertDontSee('Team Task');
+});
+
+it('shows all tasks when myTasksOnly is false', function () {
+    // Arrange
+    $user = User::factory()->create(['username' => 'alice']);
+
+    $otherTeam = Team::factory()->create(['name' => 'Engineering']);
+
+    $personalTask = ScheduledTask::factory()->create([
+        'team_id' => $user->personalTeam()->id,
+        'name' => 'My Personal Task',
+    ]);
+
+    $otherTask = ScheduledTask::factory()->create([
+        'team_id' => $otherTeam->id,
+        'name' => 'Other Team Task',
+    ]);
+
+    // Act & Assert
+    $this->actingAs($user);
+
+    livewire(Index::class)
+        ->set('myTasksOnly', false)
+        ->assertSee('My Personal Task')
+        ->assertSee('Other Team Task');
+});
+
+it('can filter by myTasksOnly via URL parameter', function () {
+    // Arrange
+    $user = User::factory()->create(['username' => 'bob']);
+
+    $otherTeam = Team::factory()->create();
+
+    $personalTask = ScheduledTask::factory()->create([
+        'team_id' => $user->personalTeam()->id,
+        'name' => 'Personal Task',
+    ]);
+
+    $otherTask = ScheduledTask::factory()->create([
+        'team_id' => $otherTeam->id,
+        'name' => 'Other Task',
+    ]);
+
+    // Act & Assert
+    $this->actingAs($user)
+        ->get('/tasks?myTasksOnly=1')
+        ->assertSee('Personal Task')
+        ->assertDontSee('Other Task');
+});
+
+it('can combine myTasksOnly with status filter', function () {
+    // Arrange
+    $user = User::factory()->create(['username' => 'dave']);
+
+    ScheduledTask::factory()->create([
+        'team_id' => $user->personalTeam()->id,
+        'status' => 'ok',
+        'name' => 'Personal OK',
+    ]);
+
+    ScheduledTask::factory()->create([
+        'team_id' => $user->personalTeam()->id,
+        'status' => 'alerting',
+        'name' => 'Personal Alert',
+    ]);
+
+    // Act & Assert
+    $this->actingAs($user);
+
+    livewire(Index::class)
+        ->set('myTasksOnly', true)
+        ->set('status', 'alerting')
+        ->assertSee('Personal Alert')
+        ->assertDontSee('Personal OK');
 });

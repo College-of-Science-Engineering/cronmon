@@ -15,6 +15,9 @@ class Index extends Component
     #[Url]
     public ?int $team_id = null;
 
+    #[Url]
+    public bool $myTasksOnly = false;
+
     public function delete(ScheduledTask $task): void
     {
         $task->delete();
@@ -30,10 +33,11 @@ class Index extends Component
     #[Layout('components.layouts.app')]
     public function render()
     {
-        $teamIds = auth()->user()->teams()->pluck('teams.id');
-
-        $query = ScheduledTask::whereIn('team_id', $teamIds)
-            ->with(['team', 'creator'])
+        $query = ScheduledTask::with(['team', 'creator'])
+            ->when($this->myTasksOnly, function ($query) {
+                $personalTeam = auth()->user()->personalTeam();
+                $query->where('team_id', $personalTeam->id);
+            })
             ->when($this->status, function ($query) {
                 $query->where('status', $this->status);
             })

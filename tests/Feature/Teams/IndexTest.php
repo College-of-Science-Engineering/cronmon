@@ -66,15 +66,16 @@ it('displays task count for each team', function () {
         ->assertSee('3'); // task count
 });
 
-it('displays empty state when user has no teams', function () {
+it('always displays at least personal team for new users', function () {
     // Arrange
-    $user = User::factory()->create();
+    $user = User::factory()->create(['username' => 'alice']);
 
     // Act & Assert
     $this->actingAs($user)
         ->get('/teams')
-        ->assertSee('No teams yet')
-        ->assertSee('Create your first team to get started');
+        ->assertSee('alice')
+        ->assertSee('Personal')
+        ->assertDontSee('No teams yet');
 });
 
 it('shows create team button', function () {

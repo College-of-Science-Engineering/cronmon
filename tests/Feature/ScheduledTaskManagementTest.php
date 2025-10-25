@@ -13,8 +13,6 @@ uses(RefreshDatabase::class);
 it('creates a scheduled task with valid data', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $team->users()->attach($user);
 
     $this->actingAs($user);
 
@@ -32,7 +30,7 @@ it('creates a scheduled task with valid data', function () {
 
     // Assert
     expect($task)->not->toBeNull();
-    expect($task->team_id)->toBe($team->id);
+    expect($task->team_id)->toBe($user->personalTeam()->id);
     expect($task->status)->toBe('pending');
     expect($task->unique_check_in_token)->not->toBeNull();
 

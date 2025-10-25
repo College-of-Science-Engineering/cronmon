@@ -14,12 +14,7 @@ it('does not delete a personal team', function () {
         'username' => 'jdoe',
     ]);
 
-    $team = Team::factory()->create([
-        'name' => 'jdoe',
-        'slug' => 'jdoe',
-    ]);
-
-    $team->users()->attach($user);
+    $team = $user->personalTeam(); // Use auto-created personal team
 
     $this->actingAs($user);
 

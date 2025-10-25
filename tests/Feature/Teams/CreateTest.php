@@ -87,6 +87,7 @@ it('ensures slug is unique', function () {
 it('requires team name', function () {
     // Arrange
     $user = User::factory()->create();
+    $initialCount = Team::count(); // Account for auto-created personal team
 
     // Act & Assert
     $this->actingAs($user);
@@ -95,12 +96,13 @@ it('requires team name', function () {
         ->call('save')
         ->assertHasErrors(['name' => 'required']);
 
-    expect(Team::count())->toBe(0);
+    expect(Team::count())->toBe($initialCount);
 });
 
 it('requires team name to be at least 2 characters', function () {
     // Arrange
     $user = User::factory()->create();
+    $initialCount = Team::count(); // Account for auto-created personal team
 
     // Act & Assert
     $this->actingAs($user);
@@ -109,12 +111,13 @@ it('requires team name to be at least 2 characters', function () {
         ->call('save')
         ->assertHasErrors(['name' => 'min']);
 
-    expect(Team::count())->toBe(0);
+    expect(Team::count())->toBe($initialCount);
 });
 
 it('requires team name to be no more than 255 characters', function () {
     // Arrange
     $user = User::factory()->create();
+    $initialCount = Team::count(); // Account for auto-created personal team
 
     // Act & Assert
     $this->actingAs($user);
@@ -123,7 +126,7 @@ it('requires team name to be no more than 255 characters', function () {
         ->call('save')
         ->assertHasErrors(['name' => 'max']);
 
-    expect(Team::count())->toBe(0);
+    expect(Team::count())->toBe($initialCount);
 });
 
 it('redirects to team show page after creation', function () {

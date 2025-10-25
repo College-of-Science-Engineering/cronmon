@@ -26,8 +26,6 @@ it('can render the create form', function () {
 it('can create a scheduled task with simple schedule', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $team->users()->attach($user);
 
     // Act
     $this->actingAs($user);
@@ -48,7 +46,7 @@ it('can create a scheduled task with simple schedule', function () {
     expect($task->schedule_value)->toBe('1h');
     expect($task->timezone)->toBe('UTC');
     expect($task->grace_period_minutes)->toBe(15);
-    expect($task->team_id)->toBe($team->id);
+    expect($task->team_id)->toBe($user->personalTeam()->id);
     expect($task->created_by)->toBe($user->id);
     expect($task->status)->toBe('pending');
     expect($task->unique_check_in_token)->not->toBeNull();
