@@ -39,10 +39,10 @@ it('displays status counts correctly', function () {
     // Act & Assert
     $this->actingAs($user)
         ->get('/')
-        ->assertSee('2') // OK count
-        ->assertSee('1') // Alerting count
-        ->assertSee('1') // Pending count
-        ->assertSee('1'); // Paused count
+        ->assertSee('<div class="text-4xl font-bold text-green-600 mt-2">2</div>', false)
+        ->assertSee('<div class="text-4xl font-bold text-red-600 mt-2">1</div>', false)
+        ->assertSee('<div class="text-4xl font-bold text-yellow-600 mt-2">1</div>', false)
+        ->assertSee('<div class="text-4xl font-bold text-zinc-600 mt-2">1</div>', false);
 });
 
 it('only shows tasks from users teams', function () {
@@ -63,7 +63,9 @@ it('only shows tasks from users teams', function () {
     $response = $this->actingAs($userWithAccess)->get('/');
 
     // Assert
-    $response->assertSee('2'); // Should see 2 OK tasks from their team
+    $response->assertSee('OK');
+    $response->assertSee('Tasks running smoothly');
+    $response->assertDontSee('Secret Task');
 });
 
 it('displays empty state when no alerts exist', function () {
@@ -225,21 +227,28 @@ it('limits check-ins to 10 most recent', function () {
     $team = Team::factory()->create();
     $team->users()->attach($user);
 
-    $task = ScheduledTask::factory()->create(['team_id' => $team->id, 'name' => 'Test Task']);
+    // Create 12 tasks with check-ins so names are unique
+    foreach (range(1, 12) as $index) {
+        $task = ScheduledTask::factory()->create([
+            'team_id' => $team->id,
+            'name' => 'Task ' . str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+        ]);
 
-    // Create 15 check-ins
-    for ($i = 1; $i <= 15; $i++) {
         TaskRun::factory()->create([
             'scheduled_task_id' => $task->id,
-            'checked_in_at' => now()->subMinutes(15 - $i),
+            'checked_in_at' => now()->subMinutes(12 - $index),
         ]);
     }
 
     // Act
     $response = $this->actingAs($user)->get('/');
 
-    // Assert - should see task name (appears in recent 10 check-ins)
-    $response->assertSee('Test Task');
+    // Assert - should see only the 10 most recent tasks
+    $response->assertSee('Task 12');
+    $response->assertSee('Task 11');
+    $response->assertSee('Task 03');
+    $response->assertDontSee('Task 01');
+    $response->assertDontSee('Task 02');
 });
 
 it('does not display tasks from other teams', function () {

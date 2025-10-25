@@ -19,3 +19,12 @@
 3. Introduce API + job tests that simulate a successful ping, assert the job dispatch, and verify the downstream TaskRun/Status mutations, ideally faking the queue to keep the run fast.
 4. Extend the policy suite with explicit denial cases for every ability and add coverage for business rules that sit outside the policies (personal team deletion, task migration requirements).
 5. Map out remaining high-value journeys (creating/editing tasks, acknowledging alerts, silencing entities) and grow the feature suite so UI regressions surface in CI instead of production.
+
+## Action Items
+- [x] Harden dashboard assertions so count and limit checks target the intended elements (keep using Pest + `RefreshDatabase`).
+- [ ] Add Livewire feature coverage for teams (personal-team guard, task migration modal, member add/remove rules) in the existing Pest style.
+- [ ] Add Livewire feature coverage for scheduled task create/edit flows, including validation failures and successful persistence.
+- [ ] Create API/queue coverage for `/ping/{token}` that fakes the queue, asserts `RecordTaskCheckIn` dispatch, and confirms TaskRun/task status updates.
+- [ ] Move the ping 404 test out of `tests/Feature/ExampleTest.php:4-9` and into the new ping feature test file.
+- [ ] Extend policy specs with explicit denials for restore/force delete (and any future abilities) so membership leaks are caught early.
+- [ ] Mirror the existing Arrange/Act/Assert Pest conventions when adding new tests to avoid style drift.
