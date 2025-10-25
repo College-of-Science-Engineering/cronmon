@@ -57,4 +57,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Team::class);
     }
+
+    public function getNameAttribute(): string
+    {
+        return trim("{$this->forenames} {$this->surname}");
+    }
 }

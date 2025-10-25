@@ -468,11 +468,31 @@ Manages team membership.
   - Perfect for experienced sysadmins
 - **Test Coverage:** 3 new tests for API examples display
 
+**18. Implemented Team Management (2025-10-25)**
+- **Achievement:** Full CRUD for teams with member management and smart task migration.
+- **Implementation Details:**
+  - Teams Index: list, create button, member/task counts, personal team badges
+  - Teams Show: members section (add/remove), tasks section, delete with migration modal
+  - Teams Create: simple form with auto-slug generation and uniqueness
+  - Personal team protection via `isPersonalTeam()` helper
+  - Added `name` accessor to User model (combines forenames + surname)
+  - Flyout modal for task migration when deleting teams with tasks
+  - Cannot delete personal teams or remove last member from any team
+- **Test Coverage:** 27 new tests (9 Index, 15 Show, 9 Create)
+- **Bug Found During Testing:**
+  - Teams Show component had `orderBy('name')` calls failing on non-existent column
+  - Test was falsely passing because team name appeared in SQL error trace
+  - Fixed by using `orderBy('surname')->orderBy('forenames')` for users
+  - Fixed by using `orderBy('teams.name')` to qualify table in join queries
+  - Improved test to assert multiple UI elements (headings, buttons) not just content strings
+- **Lesson:** Tests should verify multiple UI elements render correctly, not just check for content strings that might appear in error output
+
 ### General Approach
 - **Test-Driven Development:** Writing Pest tests BEFORE fixing bugs helped catch multiple issues and ensured the fixes actually worked.
 - **Ask for Help:** When stuck on Lando/Docker configuration issues, complex test failures, or environment-specific problems, ALWAYS ask the user. They love helping and know the setup intimately. Don't waste time guessing at fixes.
 - **Use Laravel Boost:** The `search-docs` tool is invaluable for finding version-specific documentation for Laravel ecosystem packages.
 - **Follow Team Conventions:** TestDataSeeder pattern, Livewire Form classes, and team-based authorization model all came from asking about the team's preferences.
+- **Test Robustness:** When testing page rendering, assert for multiple UI elements (headings, buttons, etc.) not just the main content. Tests can falsely pass if they only check for strings that might appear in error messages/SQL traces. Example: A test checking `assertSee('Engineering Team')` passed even though the page crashed, because the team name appeared in the SQL error output.
 
 ## Phase 1.5 - UI Tweaks & Polish
 
@@ -563,7 +583,7 @@ Manages team membership.
 - ✅ Team-based authorization policies (ScheduledTaskPolicy & TeamPolicy)
 
 ### Test Coverage
-**131 tests with 290 assertions, all passing! ✅**
+**164 tests with 360 assertions, all passing! ✅**
 
 Test breakdown by feature:
 - **Unit Tests:** 1 test (example/sanity check)
@@ -579,6 +599,10 @@ Test breakdown by feature:
   - Show: 25 tests - details/history/alerts/API tabs, charts, badges, pagination, API examples
 - **Schedule Calculator Service:** 15 tests - interval parsing, cron expressions, late detection
 - **Team Policy:** 11 tests - team membership authorization
+- **Teams CRUD:** 27 tests - (added in Phase 2)
+  - Index: 9 tests - listing, member/task counts, personal team badges
+  - Show: 15 tests - members, tasks, add/remove, migration modal, authorization
+  - Create: 9 tests - creation, slug generation, validation
 
 All tests follow team conventions with Arrange/Act/Assert pattern and use RefreshDatabase trait.
 
@@ -616,6 +640,39 @@ All tests follow team conventions with Arrange/Act/Assert pattern and use Refres
    - Real URLs with actual task tokens
    - Examples for GET, POST with data, and cron job integration
 
+4. **Team Management** ✅ - Full CRUD for teams (2025-10-25)
+   - **Teams Index Page** (`/teams`)
+     - List all teams user is a member of
+     - Display member count and task count for each team
+     - Show "Personal" badge for personal teams
+     - Create new team button
+     - Empty state when user has no teams
+   - **Teams Show Page** (`/teams/{team}`)
+     - View team details (name, slug, personal badge)
+     - Members section: list members, add by email, remove members
+     - Tasks section: list all scheduled tasks for the team
+     - Delete team with smart migration modal (flyout variant)
+     - Cannot delete personal teams
+     - Prevents removing last member from team
+   - **Teams Create Page** (`/teams/create`)
+     - Simple form with team name
+     - Auto-generates URL-friendly slug with uniqueness check
+     - Creator automatically added as first member
+   - **Personal Team Protection**
+     - Added `isPersonalTeam()` helper to Team model
+     - Personal teams (name === username) cannot be deleted
+     - No edit/delete options shown for personal teams
+   - **User Model Enhancement**
+     - Added `name` accessor combining `forenames` and `surname`
+   - **Test Coverage**
+     - 27 new tests for Teams functionality
+     - Teams Index: 9 tests
+     - Teams Show: 15 tests
+     - Teams Create: 9 tests
+     - All tests follow Arrange/Act/Assert pattern
+   - **Navigation**
+     - Added Teams link to sidebar with user-group icon
+
 ### Features to Consider
 
 1. **Alert Management**
@@ -624,11 +681,9 @@ All tests follow team conventions with Arrange/Act/Assert pattern and use Refres
    - Alert history page (all alerts across all tasks)
    - Consider alert preferences per task or team
 
-2. **Team Management** (if needed)
-   - View team members
-   - Invite users to teams
-   - Create additional teams beyond personal team
-   - Team settings page
+2. **Team Invitations** (deferred from Team Management)
+   - Email invitation system with tokens
+   - Currently only existing users can be added by email
 
 3. **User Settings**
    - Timezone preferences
@@ -637,7 +692,6 @@ All tests follow team conventions with Arrange/Act/Assert pattern and use Refres
 
 ### Questions to Discuss
 - Which remaining Phase 2 feature would provide the most value next?
-- Do we need team management at this stage, or defer it?
 - Should we add a "pause task" button to the UI?
 - Do we want alert acknowledgment functionality?
 - Should we add more chart types (late/on-time ratio, frequency histogram)?
@@ -651,9 +705,9 @@ All tests follow team conventions with Arrange/Act/Assert pattern and use Refres
 - Consider adding task tags/categories for organization
 
 ### Testing & Documentation
-- Add feature tests for authorization policies
+- ~~Add feature tests for authorization policies~~ ✅ Complete
 - Document the check-in API (markdown file or dedicated page)
 - Document the alert system and email templates
 - Add deployment guide (queue workers, scheduler, etc.)
 
-**Current State:** Phase 1 complete and production-ready! Phase 2 in progress with dashboard and enhanced filtering complete. The application successfully monitors cron jobs, detects missed runs, sends alerts, and provides a beautiful, functional UI for management.
+**Current State:** Phase 1 complete and production-ready! Phase 2 in progress with dashboard, enhanced filtering, API documentation, and full team management complete (164 tests, 360 assertions). The application successfully monitors cron jobs, detects missed runs, sends alerts, and provides a beautiful, functional UI for management with complete team collaboration features.

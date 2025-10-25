@@ -26,4 +26,17 @@ class Team extends Model
     {
         return $this->hasMany(ScheduledTask::class);
     }
+
+    public function isPersonalTeam(?User $user = null): bool
+    {
+        if ($user === null) {
+            $user = auth()->user();
+        }
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->name === $user->username;
+    }
 }
