@@ -223,7 +223,7 @@ it('displays late badge for late check-ins', function () {
 
 it('limits check-ins to 10 most recent', function () {
     // Arrange
-    $user = User::factory()->create();
+    $user = User::factory()->create(['username' => 'admin2x']);
     $team = Team::factory()->create();
     $team->users()->attach($user);
 
