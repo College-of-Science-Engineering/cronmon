@@ -41,6 +41,12 @@ class TestDataSeeder extends Seeder
             'email' => 'jane@example.com',
         ]);
 
+        $adminTeam = Team::create([
+            'name' => 'admin2x',
+            'slug' => 'admin2x',
+        ]);
+        $adminTeam->users()->attach($admin);
+
         $personalTeam1 = Team::create([
             'name' => 'abc1x',
             'slug' => 'abc1x',
