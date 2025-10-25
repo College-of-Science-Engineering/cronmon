@@ -23,7 +23,7 @@
 ## Action Items
 - [x] Harden dashboard assertions so count and limit checks target the intended elements (keep using Pest + `RefreshDatabase`).
 - [x] Add Livewire feature coverage for teams (personal-team guard, task migration modal, member add/remove rules) in the existing Pest style.
-- [ ] Add Livewire feature coverage for scheduled task create/edit flows, including validation failures and successful persistence.
+- [x] Add Livewire feature coverage for scheduled task create/edit flows, including validation failures and successful persistence.
 - [ ] Create API/queue coverage for `/ping/{token}` that fakes the queue, asserts `RecordTaskCheckIn` dispatch, and confirms TaskRun/task status updates.
 - [ ] Move the ping 404 test out of `tests/Feature/ExampleTest.php:4-9` and into the new ping feature test file.
 - [ ] Extend policy specs with explicit denials for restore/force delete (and any future abilities) so membership leaks are caught early.
