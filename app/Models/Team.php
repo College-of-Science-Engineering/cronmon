@@ -17,6 +17,13 @@ class Team extends Model
         'slug',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'alerts_silenced_until' => 'datetime',
+        ];
+    }
+
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
@@ -38,5 +45,10 @@ class Team extends Model
         }
 
         return $this->name === $user->username;
+    }
+
+    public function isSilenced(): bool
+    {
+        return $this->alerts_silenced_until !== null && $this->alerts_silenced_until->isFuture();
     }
 }

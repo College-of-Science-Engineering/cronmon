@@ -53,6 +53,11 @@ class CheckMissedTasks extends Command
             return;
         }
 
+        // Skip silenced tasks
+        if ($task->isSilenced()) {
+            return;
+        }
+
         $isLate = $this->calculator->isTaskLate(
             $task->schedule_type,
             $task->schedule_value,

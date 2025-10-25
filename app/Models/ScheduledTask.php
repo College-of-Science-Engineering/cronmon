@@ -32,6 +32,7 @@ class ScheduledTask extends Model
         return [
             'last_checked_in_at' => 'datetime',
             'next_expected_at' => 'datetime',
+            'alerts_silenced_until' => 'datetime',
         ];
     }
 
@@ -58,5 +59,44 @@ class ScheduledTask extends Model
     public function getPingUrl(): string
     {
         return route('api.ping', $this->unique_check_in_token);
+    }
+
+    public function isSilenced(): bool
+    {
+        if ($this->alerts_silenced_until !== null && $this->alerts_silenced_until->isFuture()) {
+            return true;
+        }
+
+        if ($this->team->alerts_silenced_until !== null && $this->team->alerts_silenced_until->isFuture()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function getSilencedCause(): ?string
+    {
+        if ($this->alerts_silenced_until !== null && $this->alerts_silenced_until->isFuture()) {
+            return 'task';
+        }
+
+        if ($this->team->alerts_silenced_until !== null && $this->team->alerts_silenced_until->isFuture()) {
+            return 'team';
+        }
+
+        return null;
+    }
+
+    public function getSilencedUntil(): ?\Illuminate\Support\Carbon
+    {
+        if ($this->alerts_silenced_until !== null && $this->alerts_silenced_until->isFuture()) {
+            return $this->alerts_silenced_until;
+        }
+
+        if ($this->team->alerts_silenced_until !== null && $this->team->alerts_silenced_until->isFuture()) {
+            return $this->team->alerts_silenced_until;
+        }
+
+        return null;
     }
 }

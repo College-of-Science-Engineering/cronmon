@@ -304,3 +304,88 @@ it('includes helpful information in alert message', function () {
     $alert = Alert::where('scheduled_task_id', $task->id)->first();
     expect($alert->message)->toContain('Database Backup');
 });
+
+it('does not alert for silenced task', function () {
+    // Arrange
+    Mail::fake();
+
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($user);
+
+    $task = ScheduledTask::factory()->create([
+        'team_id' => $team->id,
+        'schedule_type' => 'simple',
+        'schedule_value' => '5m',
+        'grace_period_minutes' => 10,
+        'last_checked_in_at' => now()->subMinutes(30), // Very late
+        'status' => 'ok',
+        'alerts_silenced_until' => now()->addHours(2), // Silenced for 2 hours
+    ]);
+
+    // Act
+    $this->artisan('tasks:check-missed')->assertSuccessful();
+
+    // Assert - no alert created, status unchanged
+    expect(Alert::where('scheduled_task_id', $task->id)->count())->toBe(0);
+    $task->refresh();
+    expect($task->status)->toBe('ok');
+    Mail::assertNothingSent();
+});
+
+it('does not alert for task when team is silenced', function () {
+    // Arrange
+    Mail::fake();
+
+    $user = User::factory()->create();
+    $team = Team::factory()->create([
+        'alerts_silenced_until' => now()->addHours(2), // Team silenced
+    ]);
+    $team->users()->attach($user);
+
+    $task = ScheduledTask::factory()->create([
+        'team_id' => $team->id,
+        'schedule_type' => 'simple',
+        'schedule_value' => '5m',
+        'grace_period_minutes' => 10,
+        'last_checked_in_at' => now()->subMinutes(30), // Very late
+        'status' => 'ok',
+    ]);
+
+    // Act
+    $this->artisan('tasks:check-missed')->assertSuccessful();
+
+    // Assert - no alert created, status unchanged
+    expect(Alert::where('scheduled_task_id', $task->id)->count())->toBe(0);
+    $task->refresh();
+    expect($task->status)->toBe('ok');
+    Mail::assertNothingSent();
+});
+
+it('resumes alerting when silence period expires', function () {
+    // Arrange
+    Mail::fake();
+
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($user);
+
+    $task = ScheduledTask::factory()->create([
+        'team_id' => $team->id,
+        'schedule_type' => 'simple',
+        'schedule_value' => '5m',
+        'grace_period_minutes' => 10,
+        'last_checked_in_at' => now()->subMinutes(30), // Very late
+        'status' => 'ok',
+        'alerts_silenced_until' => now()->subHour(), // Silence expired
+    ]);
+
+    // Act
+    $this->artisan('tasks:check-missed')->assertSuccessful();
+
+    // Assert - alert created because silence expired
+    $task->refresh();
+    expect($task->status)->toBe('alerting');
+    expect(Alert::where('scheduled_task_id', $task->id)->count())->toBe(1);
+    Mail::assertSent(TaskMissedNotification::class);
+});

@@ -583,7 +583,7 @@ Manages team membership.
 - ✅ Team-based authorization policies (ScheduledTaskPolicy & TeamPolicy)
 
 ### Test Coverage
-**164 tests with 360 assertions, all passing! ✅**
+**175 tests with 382 assertions, all passing! ✅**
 
 Test breakdown by feature:
 - **Unit Tests:** 1 test (example/sanity check)
@@ -603,6 +603,8 @@ Test breakdown by feature:
   - Index: 9 tests - listing, member/task counts, personal team badges
   - Show: 15 tests - members, tasks, add/remove, migration modal, authorization
   - Create: 9 tests - creation, slug generation, validation
+- **Alert Management Helpers:** 11 tests - (added in Phase 2)
+  - Task/team silencing logic, expiry handling, priority rules
 
 All tests follow team conventions with Arrange/Act/Assert pattern and use RefreshDatabase trait.
 
@@ -673,27 +675,61 @@ All tests follow team conventions with Arrange/Act/Assert pattern and use Refres
    - **Navigation**
      - Added Teams link to sidebar with user-group icon
 
+5. **Alert Management** 🚧 - In Progress (2025-10-25)
+
+   **Design Decisions:**
+   - **Alert Acknowledgment:** Purely informational - records who/when, doesn't change task status
+   - **Alert Silencing:** Two-level system (task-level and team-level) to handle planned outages
+   - **Duration Options:** 1 hour, 6 hours, 24 hours, 3 days, 7 days, custom
+   - **Email Enhancement:** Include direct link to task show page for quick access
+
+   **Completed:**
+   - [x] Database migrations for `alerts_silenced_until` columns
+     - Added to `scheduled_tasks` table
+     - Added to `teams` table
+   - [x] Model helper methods
+     - `ScheduledTask::isSilenced()` - checks task or team silence
+     - `ScheduledTask::getSilencedCause()` - returns 'task'|'team'|null
+     - `ScheduledTask::getSilencedUntil()` - returns Carbon timestamp
+     - `Team::isSilenced()` - checks team silence
+   - [x] Test coverage for helper methods (11 tests)
+     - Task silencing, team silencing, expiry handling
+     - Priority logic (task silence takes precedence)
+     - Edge cases covered
+
+   **Remaining Implementation:**
+   - [ ] Update `CheckMissedTasks` command to skip silenced tasks
+   - [ ] Alert acknowledgment UI on task show page
+   - [ ] Task silencing UI (modal with duration picker)
+   - [ ] Team silencing UI (modal with warning + duration picker)
+   - [ ] All Alerts page (`/alerts`)
+     - Filter pills: All / Unacknowledged (with #[Url])
+     - Maybe filter by type: Missed / Late / Recovered
+     - Quick acknowledge button per row
+     - Link to task show page
+   - [ ] Update email template with task link
+   - [ ] Add "Alerts" navigation to sidebar
+   - [ ] Visual indicators for silenced tasks/teams (badges, countdown)
+   - [ ] Write comprehensive tests for all UI components
+
+   **Key Technical Decisions:**
+   - Silencing is checked via helper methods, not repeated logic
+   - Task silence takes priority over team silence in UI display
+   - Expired silences automatically become inactive (no cleanup job needed)
+   - `alerts` table already has `acknowledged_by` and `acknowledged_at` columns
+
 ### Features to Consider
 
-1. **Alert Management**
-   - Mark alerts as acknowledged (add button to Alerts tab)
-   - Filter alerts by type/status
-   - Alert history page (all alerts across all tasks)
-   - Consider alert preferences per task or team
-
-2. **Team Invitations** (deferred from Team Management)
+1. **Team Invitations** (deferred from Team Management)
    - Email invitation system with tokens
    - Currently only existing users can be added by email
 
-3. **User Settings**
+2. **User Settings**
    - Timezone preferences
    - Email notification preferences
    - API token management (for future authenticated APIs)
 
 ### Questions to Discuss
-- Which remaining Phase 2 feature would provide the most value next?
-- Should we add a "pause task" button to the UI?
-- Do we want alert acknowledgment functionality?
 - Should we add more chart types (late/on-time ratio, frequency histogram)?
 - Should we add an "ok" status filter to the pills, or keep just the three we have?
 
@@ -710,4 +746,4 @@ All tests follow team conventions with Arrange/Act/Assert pattern and use Refres
 - Document the alert system and email templates
 - Add deployment guide (queue workers, scheduler, etc.)
 
-**Current State:** Phase 1 complete and production-ready! Phase 2 in progress with dashboard, enhanced filtering, API documentation, and full team management complete (164 tests, 360 assertions). The application successfully monitors cron jobs, detects missed runs, sends alerts, and provides a beautiful, functional UI for management with complete team collaboration features.
+**Current State:** Phase 1 complete and production-ready! Phase 2 in progress with dashboard, enhanced filtering, API documentation, and full team management complete (175 tests, 382 assertions). Alert management foundation complete (database schema, helper methods, tests). The application successfully monitors cron jobs, detects missed runs, sends alerts, and provides a beautiful, functional UI for management with complete team collaboration features.
