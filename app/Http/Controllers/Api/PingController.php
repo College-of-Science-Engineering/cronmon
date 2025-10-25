@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RecordTaskCheckIn;
 use App\Models\ScheduledTask;
-use App\Models\TaskRun;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,21 +20,8 @@ class PingController extends Controller
             ], 404);
         }
 
-        // Create TaskRun record
-        TaskRun::create([
-            'scheduled_task_id' => $task->id,
-            'checked_in_at' => now(),
-            'expected_at' => null, // Will be calculated later by background job
-            'was_late' => false, // Will be determined later by background job
-            'lateness_minutes' => null,
-            'data' => $request->input('data'),
-        ]);
-
-        // Update task's last check-in time
-        $task->update([
-            'last_checked_in_at' => now(),
-            'status' => 'ok',
-        ]);
+        // Dispatch job to record check-in
+        RecordTaskCheckIn::dispatch($task, $request->input('data'));
 
         return response()->json([
             'message' => 'Check-in recorded',

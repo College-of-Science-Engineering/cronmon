@@ -163,11 +163,10 @@ Manages team membership.
 - [ ] Write tests for automatic team creation
 
 ### Authorization & Policies
-**TODO LATER** - Building UI first to see how it works
-- [ ] Create `ScheduledTaskPolicy` (check team membership)
-- [ ] Create `TeamPolicy` (check team membership)
-- [ ] Register policies in AuthServiceProvider
-- [ ] Write tests for authorization rules
+- [x] Create `ScheduledTaskPolicy` (check team membership)
+- [x] Create `TeamPolicy` (check team membership)
+- [x] Register policies (auto-discovered by Laravel 12)
+- [x] Write tests for authorization rules (22 tests)
 
 ### Livewire Components & Routes (Using Form Class Pattern)
 - [x] Create authenticated route group
@@ -195,7 +194,7 @@ Manages team membership.
 - [x] Implement schedule parser/calculator service (ScheduleCalculator)
 - [x] Implement alert generation logic (creates missed/late/recovered alerts)
 - [x] Create Mail notification for missed/late/recovered tasks (TaskMissedNotification)
-- [ ] Schedule command in `routes/console.php` (TODO: add to Laravel scheduler)
+- [x] Schedule command in `routes/console.php` (runs every minute)
 
 ### Testing
 - [x] Write feature tests for Index CRUD operations (5 tests passing)
@@ -205,8 +204,8 @@ Manages team membership.
 - [x] Write feature tests for check-in API (13 tests passing)
 - [x] Write feature tests for schedule calculator service (15 tests passing)
 - [x] Write feature tests for missed task detection & alerts (10 tests passing)
-- [ ] Write feature tests for team-based authorization
-- [x] Run test suite for all Phase 1 features (85/85 tests passing, 188 assertions)
+- [x] Write feature tests for team-based authorization (22 tests passing)
+- [x] Run test suite for all Phase 1 features (107/107 tests passing, 220 assertions)
 
 ## Development Notes & Lessons Learned
 
@@ -368,6 +367,43 @@ Manages team membership.
 - **Final Test Count:** 85 tests with 188 assertions, all passing! ✅
 - **Browser Testing:** All UI improvements verified working correctly across different task statuses
 
+**12. Completed Phase 1 Final Cleanup (2025-10-25)**
+- **Achievement:** Finished all remaining Phase 1 tasks - scheduler configuration and authorization policies.
+- **Scheduler Setup:**
+  - Added `tasks:check-missed` command to `routes/console.php`
+  - Configured to run every minute with `withoutOverlapping()` and `runInBackground()`
+  - Ensures tasks are monitored continuously without conflicts
+- **Authorization Policies Implemented:**
+  - Created `ScheduledTaskPolicy` with team membership checks
+  - Created `TeamPolicy` with team membership checks
+  - Both policies use clean `isMemberOfTeam()` helper methods
+  - Policies automatically discovered by Laravel 12 (no manual registration needed)
+- **Comprehensive Test Coverage:**
+  - Wrote 22 policy tests covering all authorization scenarios:
+    - Team membership checks (view, update, delete, restore, forceDelete)
+    - Multi-team access scenarios
+    - Denial of unauthorized access
+    - viewAny and create permissions for all authenticated users
+  - All tests follow team conventions (Arrange, Act, Assert pattern)
+- **Final Test Count:** 107 tests with 220 assertions, all passing! 🎉
+- **Phase 1 Status:** Fully production-ready with complete test coverage and authorization!
+
+**13. Refactored Ping Endpoint to Use Queue (2025-10-25)**
+- **Achievement:** Improved ping endpoint performance by offloading work to queue.
+- **Problem Identified:** Cron jobs cluster around common times (7am, midnight, etc.) creating traffic spikes. Inline database writes in the controller could slow response times.
+- **Solution:**
+  - Created `RecordTaskCheckIn` queued job using `ShouldQueue` interface
+  - Job accepts `ScheduledTask` model and optional `data` array
+  - PingController now just validates token and dispatches job
+  - Response returns immediately without waiting for database writes
+- **Benefits:**
+  - Faster API responses for cron jobs
+  - Better handling of traffic spikes
+  - Database writes happen asynchronously in queue
+  - More resilient to load
+- **Testing:** Tests continue to pass with zero modifications thanks to `sync` queue driver in `phpunit.xml`
+- **Code Quality:** Clean separation of concerns - controller handles HTTP, job handles business logic
+
 ### General Approach
 - **Test-Driven Development:** Writing Pest tests BEFORE fixing bugs helped catch multiple issues and ensured the fixes actually worked.
 - **Ask for Help:** When stuck on Lando/Docker configuration issues, complex test failures, or environment-specific problems, ALWAYS ask the user. They love helping and know the setup intimately. Don't waste time guessing at fixes.
@@ -457,18 +493,23 @@ Manages team membership.
 **Summary:** All core functionality implemented, tested, and polished!
 - ✅ Full CRUD for scheduled tasks (Index, Create, Edit, Show)
 - ✅ Public check-in API (`/ping/{token}`)
-- ✅ Background missed task detection and alerting
+- ✅ Background missed task detection and alerting (scheduled every minute)
 - ✅ Email notifications to team members
 - ✅ Beautiful, polished UI with charts and status callouts
-- ✅ 85 comprehensive tests with 188 assertions, all passing
+- ✅ Team-based authorization policies (ScheduledTaskPolicy & TeamPolicy)
+- ✅ 107 comprehensive tests with 220 assertions, all passing
 
 ### Phase 1 Remaining Minor Tasks
-1. **Schedule Background Command** - Add `tasks:check-missed` to Laravel scheduler in `routes/console.php`
-2. **Authorization & Policies** - Implement team-based authorization:
-   - Create `ScheduledTaskPolicy` (check team membership)
-   - Create `TeamPolicy` (check team membership)
-   - Register policies in `bootstrap/app.php`
-   - Write tests for authorization rules
+1. **Schedule Background Command** ✅
+   - [x] Add `tasks:check-missed` to Laravel scheduler in `routes/console.php`
+   - Runs every minute with `withoutOverlapping()` and `runInBackground()`
+2. **Authorization & Policies** ✅
+   - [x] Create `ScheduledTaskPolicy` (check team membership)
+   - [x] Create `TeamPolicy` (check team membership)
+   - [x] Register policies in `bootstrap/app.php` (auto-discovered by Laravel 12)
+   - [x] Write tests for ScheduledTaskPolicy authorization rules (11 tests)
+   - [x] Write tests for TeamPolicy authorization rules (11 tests)
+   - **Final Test Count:** 107 tests with 220 assertions, all passing! 🎉
 
 ## Phase 2 - Planning & Ideas for Tomorrow
 

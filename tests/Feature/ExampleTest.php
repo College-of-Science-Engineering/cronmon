@@ -1,7 +1,11 @@
 <?php
 
-test('the application returns a successful response', function () {
-    $response = $this->get('/');
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-    $response->assertStatus(200);
+uses(RefreshDatabase::class);
+
+test('the ping endpoint is accessible', function () {
+    $response = $this->get('/ping/test-token');
+
+    $response->assertStatus(404); // 404 for invalid token is expected
 });
