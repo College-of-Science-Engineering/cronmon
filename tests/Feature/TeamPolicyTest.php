@@ -32,15 +32,16 @@ it('allows user to view team they belong to', function () {
     expect($user->can('view', $team))->toBeTrue();
 });
 
-it('denies user from viewing team they do not belong to', function () {
+it('allows any user to view any team', function () {
     // Arrange
-    $userWithoutAccess = User::factory()->create();
-    $userWithAccess = User::factory()->create();
+    $userWithoutMembership = User::factory()->create();
+    $userWithMembership = User::factory()->create();
     $team = Team::factory()->create();
-    $team->users()->attach($userWithAccess);
+    $team->users()->attach($userWithMembership);
 
-    // Act & Assert
-    expect($userWithoutAccess->can('view', $team))->toBeFalse();
+    // Act & Assert - all users can view all teams
+    expect($userWithoutMembership->can('view', $team))->toBeTrue();
+    expect($userWithMembership->can('view', $team))->toBeTrue();
 });
 
 it('allows user to update team they belong to', function () {

@@ -210,32 +210,39 @@ it('prevents editing tasks from teams user does not belong to', function () {
         ->assertForbidden();
 });
 
-it('shows team selection dropdown on create', function () {
+it('shows all teams in selection dropdown on create', function () {
     // Arrange
     $user = User::factory()->create();
-    $team1 = Team::factory()->create(['name' => 'Team Alpha']);
-    $team2 = Team::factory()->create(['name' => 'Team Beta']);
-    $user->teams()->attach([$team1->id, $team2->id]);
+    Team::factory()->create(['name' => 'Team Alpha']);
+    Team::factory()->create(['name' => 'Team Beta']);
+    Team::factory()->create(['name' => 'Team Gamma']);
 
     // Act & Assert
     actingAs($user);
     Livewire::test(TaskFormModal::class)
         ->assertSee('Team Alpha')
-        ->assertSee('Team Beta');
+        ->assertSee('Team Beta')
+        ->assertSee('Team Gamma');
 });
 
-it('disables team selection on edit', function () {
+it('can change team when editing', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
-    $task = ScheduledTask::factory()->for($team)->create(['created_by' => $user->id]);
+    $team1 = Team::factory()->create(['name' => 'Original Team']);
+    $team2 = Team::factory()->create(['name' => 'New Team']);
+    $user->teams()->attach([$team1->id, $team2->id]);
+    $task = ScheduledTask::factory()->for($team1)->create(['created_by' => $user->id]);
 
-    // Act & Assert
+    // Act
     actingAs($user);
     Livewire::test(TaskFormModal::class)
         ->dispatch('open-task-form', taskId: $task->id)
-        ->assertSee('Team cannot be changed after creation');
+        ->set('team_id', $team2->id)
+        ->call('save');
+
+    // Assert
+    $task->refresh();
+    expect($task->team_id)->toBe($team2->id);
 });
 
 it('can create task for specific team', function () {

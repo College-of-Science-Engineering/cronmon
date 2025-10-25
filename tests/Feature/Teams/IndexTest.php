@@ -23,19 +23,19 @@ it('displays teams user is a member of', function () {
         ->assertSee('Engineering Team');
 });
 
-it('does not display teams user is not a member of', function () {
+it('displays all teams including those user is not a member of', function () {
     // Arrange
     $user = User::factory()->create();
     $userTeam = Team::factory()->create(['name' => 'My Team']);
     $userTeam->users()->attach($user);
 
-    $otherTeam = Team::factory()->create(['name' => 'Secret Team']);
+    $otherTeam = Team::factory()->create(['name' => 'Other Team']);
 
     // Act & Assert
     $this->actingAs($user)
         ->get('/teams')
         ->assertSee('My Team')
-        ->assertDontSee('Secret Team');
+        ->assertSee('Other Team');
 });
 
 it('displays member count for each team', function () {

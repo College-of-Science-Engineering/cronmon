@@ -254,13 +254,14 @@ it('can migrate tasks to another team and delete', function () {
 
 // Note: Authentication tests skipped - SSO not yet implemented
 
-it('prevents viewing team user is not a member of', function () {
+it('allows viewing any team even if user is not a member', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
+    $team = Team::factory()->create(['name' => 'Other Team']);
 
     // Act & Assert
     $this->actingAs($user)
         ->get("/teams/{$team->id}")
-        ->assertForbidden();
+        ->assertSuccessful()
+        ->assertSee('Other Team');
 });

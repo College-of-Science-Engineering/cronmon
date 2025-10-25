@@ -46,14 +46,17 @@ class ScheduledTaskForm extends Form
         $this->validate();
 
         if ($this->scheduledTask) {
-            $this->scheduledTask->update($this->only([
-                'name',
-                'description',
-                'schedule_type',
-                'schedule_value',
-                'timezone',
-                'grace_period_minutes',
-            ]));
+            $this->scheduledTask->update(array_merge(
+                $this->only([
+                    'name',
+                    'description',
+                    'schedule_type',
+                    'schedule_value',
+                    'timezone',
+                    'grace_period_minutes',
+                ]),
+                $team_id ? ['team_id' => $team_id] : []
+            ));
 
             return $this->scheduledTask;
         }

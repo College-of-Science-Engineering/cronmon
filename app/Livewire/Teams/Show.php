@@ -104,9 +104,9 @@ class Show extends Component
     {
         $members = $this->team->users()->orderBy('surname')->orderBy('forenames')->get();
         $tasks = $this->team->scheduledTasks()->orderBy('name')->get();
-        $availableTeams = auth()->user()->teams()
-            ->where('teams.id', '!=', $this->team->id)
-            ->orderBy('teams.name')
+        $availableTeams = Team::query()
+            ->where('id', '!=', $this->team->id)
+            ->orderBy('name')
             ->get();
 
         return view('livewire.teams.show', [

@@ -4,6 +4,7 @@ namespace App\Livewire\ScheduledTasks;
 
 use App\Livewire\Forms\ScheduledTaskForm;
 use App\Models\ScheduledTask;
+use App\Models\Team;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -43,7 +44,7 @@ class TaskFormModal extends Component
     public function save(): void
     {
         if ($this->taskId) {
-            $task = $this->form->save();
+            $task = $this->form->save($this->team_id);
         } else {
             $task = $this->form->save($this->team_id);
         }
@@ -57,7 +58,7 @@ class TaskFormModal extends Component
     public function render()
     {
         return view('livewire.scheduled-tasks.task-form-modal', [
-            'teams' => auth()->user()->teams,
+            'teams' => Team::orderBy('name')->get(),
         ]);
     }
 }

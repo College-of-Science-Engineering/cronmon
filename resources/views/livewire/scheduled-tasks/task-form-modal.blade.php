@@ -7,15 +7,12 @@
 
         <flux:field>
             <flux:label>Team</flux:label>
-            <flux:select wire:model="team_id" :disabled="$taskId !== null">
+            <flux:select wire:model="team_id">
                 @foreach($teams as $team)
                     <flux:select.option value="{{ $team->id }}">{{ $team->name }}</flux:select.option>
                 @endforeach
             </flux:select>
             <flux:error name="team_id" />
-            @if($taskId)
-                <flux:description>Team cannot be changed after creation</flux:description>
-            @endif
         </flux:field>
 
         <flux:field>

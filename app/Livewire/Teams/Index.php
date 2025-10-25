@@ -10,7 +10,7 @@ class Index extends Component
     #[Layout('components.layouts.app')]
     public function render()
     {
-        $teams = auth()->user()->teams()
+        $teams = \App\Models\Team::query()
             ->withCount(['users', 'scheduledTasks'])
             ->latest()
             ->get();

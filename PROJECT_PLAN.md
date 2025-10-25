@@ -487,6 +487,45 @@ Manages team membership.
   - Improved test to assert multiple UI elements (headings, buttons) not just content strings
 - **Lesson:** Tests should verify multiple UI elements render correctly, not just check for content strings that might appear in error output
 
+**19. Refactored Task Create/Edit to Flyout Modal (2025-10-25)**
+- **Achievement:** Converted clunky full-page workflow to sleek event-driven modal system.
+- **Motivation:** User feedback that page navigation broke their flow when creating/editing tasks.
+- **Architecture Decision:** Event-driven modal pattern using Livewire dispatch
+  - Buttons dispatch `open-task-form` event with optional `taskId`
+  - Single `TaskFormModal` component listens via `#[On('open-task-form')]`
+  - Modal embedded once in each view (Index, Show, Dashboard)
+  - Reuses existing `ScheduledTaskForm` logic for validation and save
+- **Implementation Details:**
+  - Created reusable TaskFormModal component (73 lines including mount/save/render)
+  - Used Flux flyout variant (team standard for all modals)
+  - Updated ScheduledTaskForm::save() to accept team_id for both create and update
+  - Removed full-page Create/Edit components and routes (simplified codebase)
+  - All buttons changed from href to wire:click dispatch
+- **Team Selection Enhancement:**
+  - Initial version showed only user's teams (matching filter dropdown pattern)
+  - User requested all teams visible to support cross-team workflows
+  - Example: "Manager asking junior admin to create task for another team"
+  - Changed Team::query() to show all teams ordered by name
+  - Defaults to personal team on create, maintains team_id on edit
+- **Editable Team Assignment:**
+  - Initial version disabled team select when editing (prevent accidental changes)
+  - User requested ability to change team for "fat-finger" fix scenario
+  - Removed :disabled attribute, updated save() to apply team_id on update
+  - Test changed from "disables team selection" to "can change team when editing"
+- **Test Coverage:** 20 comprehensive tests for TaskFormModal
+  - Create workflow: modal open, team defaults, validation, save, redirect
+  - Edit workflow: load task, team selection, update, redirect
+  - Authorization: prevents editing tasks from non-member teams
+  - Form behavior: reset between create/edit, all teams visible
+  - Edge cases: invalid tokens, grace period bounds, timezone validation
+- **Files Removed:** 3 old components, 3 old views, 1 shared partial, 3 test files
+- **Benefits:**
+  - Slicker UX - no page navigation interruptions
+  - Reduced code (single modal vs two full pages)
+  - Enhanced flexibility (cross-team management, editable team assignment)
+  - Maintains all validation and authorization rules
+- **Lesson:** When users provide feedback about workflow friction, consider event-driven modals instead of full-page navigation. The initial architectural decision (show only user's teams) had to be revised when real-world use cases emerged.
+
 ### General Approach
 - **Test-Driven Development:** Writing Pest tests BEFORE fixing bugs helped catch multiple issues and ensured the fixes actually worked.
 - **Ask for Help:** When stuck on Lando/Docker configuration issues, complex test failures, or environment-specific problems, ALWAYS ask the user. They love helping and know the setup intimately. Don't waste time guessing at fixes.
@@ -619,6 +658,23 @@ All tests follow team conventions with Arrange/Act/Assert pattern and use Refres
    - [x] Write tests for ScheduledTaskPolicy authorization rules
    - [x] Write tests for TeamPolicy authorization rules
 
+## Security & Trust Model
+
+**Important Context:** This application is designed for a small, trusted IT team. All authenticated users are trusted not to perform malicious actions. The authorization model focuses on:
+
+- **Team Membership for Modifications:** Users must be team members to update/delete teams or scheduled tasks
+- **Universal Read Access:** All users can view all teams and tasks regardless of membership
+- **No Malicious Activity Protection:** We don't guard against malicious or destructive behavior from authenticated users
+- **Simplicity Over Security Theater:** The goal is smooth workflows for a trusted team, not defense-in-depth
+
+This trust-based approach enables features like:
+- Cross-team task creation (manager asking junior admin to create tasks for other teams)
+- Viewing all teams to understand the full organizational structure
+- Migrating tasks between any teams when cleaning up or reorganizing
+- No artificial barriers that would slow down legitimate work
+
+**Key Principle:** If you're authenticated, you're trusted. Don't add authorization checks that prevent users from viewing data or performing legitimate administrative tasks across team boundaries.
+
 ## Phase 2 - In Progress
 
 ### Completed Features
@@ -675,7 +731,71 @@ All tests follow team conventions with Arrange/Act/Assert pattern and use Refres
    - **Navigation**
      - Added Teams link to sidebar with user-group icon
 
-5. **Alert Management** 🚧 - In Progress (2025-10-25)
+5. **Task Create/Edit Modal Refactor** ✅ - Complete (2025-10-25)
+
+   **User Feedback:** The full-page create/edit workflow felt clunky and broke the user's flow. Requested conversion to a sleek flyout modal for better UX.
+
+   **Architecture:**
+   - Event-driven modal system using Livewire dispatch
+   - Single reusable `TaskFormModal` component handles both create and edit
+   - Buttons dispatch `open-task-form` event with optional `taskId` parameter
+   - Component listens via `#[On('open-task-form')]` attribute
+   - Modal embedded in Index, Show, and Dashboard views
+   - Form logic preserved in existing `ScheduledTaskForm` object
+
+   **Implementation Details:**
+   - Created `TaskFormModal.php` Livewire component
+   - Created `task-form-modal.blade.php` view with Flux flyout variant
+   - Updated `ScheduledTaskForm::save()` to accept optional `team_id` parameter for both create and update
+   - Removed full-page Create and Edit components and routes
+   - Updated all create/edit buttons to dispatch events instead of navigate
+   - Added `#[On('task-saved')]` listeners to Index and Show for data refresh
+   - Removed "New Task" link from sidebar (users create from Index/Dashboard)
+
+   **Team Selection Enhancements:**
+   - Shows ALL teams in system (not just user's teams) to support cross-team workflows
+   - Defaults to personal team on create
+   - Team can be changed when editing (fat-finger fix scenario)
+   - Manager can ask junior admin to create task for another team
+
+   **Files Created:**
+   - `app/Livewire/ScheduledTasks/TaskFormModal.php`
+   - `resources/views/livewire/scheduled-tasks/task-form-modal.blade.php`
+   - `tests/Feature/ScheduledTasks/TaskFormModalTest.php` (20 comprehensive tests)
+
+   **Files Modified:**
+   - `app/Livewire/Forms/ScheduledTaskForm.php` - accepts team_id for update
+   - `app/Livewire/ScheduledTasks/Index.php` - event listener, modal component
+   - `app/Livewire/ScheduledTasks/Show.php` - event listener, modal component
+   - `resources/views/livewire/scheduled-tasks/index.blade.php` - dispatch events
+   - `resources/views/livewire/scheduled-tasks/show.blade.php` - dispatch events
+   - `resources/views/livewire/dashboard.blade.php` - modal component
+   - `resources/views/components/layouts/app.blade.php` - removed sidebar link
+   - `routes/web.php` - removed `tasks.create` and `tasks.edit` routes
+
+   **Files Deleted:**
+   - `app/Livewire/ScheduledTasks/Create.php`
+   - `app/Livewire/ScheduledTasks/Edit.php`
+   - `resources/views/livewire/scheduled-tasks/create.blade.php`
+   - `resources/views/livewire/scheduled-tasks/edit.blade.php`
+   - `resources/views/livewire/scheduled-tasks/partials/task-form-fields.blade.php`
+   - `tests/Feature/ScheduledTaskManagementTest.php`
+   - `tests/Feature/ScheduledTasks/CreateTest.php`
+   - `tests/Feature/ScheduledTasks/EditTest.php`
+
+   **Test Coverage:**
+   - 20 new tests for TaskFormModal component
+   - Tests cover: create, edit, validation, authorization, team selection, form reset, redirects
+   - All previous tests updated to work with modal workflow
+   - Total: 201 tests with 449 assertions (all passing)
+
+   **Benefits:**
+   - Slicker user experience - no page navigation interruptions
+   - Reduced code duplication (single modal component vs two full pages)
+   - Maintains all functionality and validation rules
+   - Enhanced flexibility for cross-team task management
+
+6. **Alert Management** 🚧 - In Progress (2025-10-25)
 
    **Design Decisions:**
    - **Alert Acknowledgment:** Purely informational - records who/when, doesn't change task status
