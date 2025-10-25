@@ -24,7 +24,6 @@
                 </flux:sidebar.header>
                 <flux:sidebar.nav>
                     <flux:sidebar.item icon="squares-2x2" :href="route('dashboard')" wire:navigate>Dashboard</flux:sidebar.item>
-                    <flux:sidebar.item icon="plus-circle" :href="route('tasks.create')" wire:navigate>New Task</flux:sidebar.item>
                     <flux:separator class="my-2" />
                     <flux:sidebar.item icon="list-bullet" :href="route('tasks.index')" wire:navigate>All Tasks</flux:sidebar.item>
                     <flux:sidebar.item icon="user-group" :href="route('teams.index')" wire:navigate>Teams</flux:sidebar.item>

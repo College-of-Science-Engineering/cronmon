@@ -443,7 +443,7 @@ it('has edit button linking to edit page', function () {
     $this->actingAs($user)
         ->get("/tasks/{$task->id}")
         ->assertSee('Edit')
-        ->assertSee(route('tasks.edit', $task, false));
+        ->assertSee('open-task-form', false); // Check raw HTML
 });
 
 it('has back to list button', function () {

@@ -4,6 +4,7 @@ namespace App\Livewire\ScheduledTasks;
 
 use App\Models\ScheduledTask;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -28,6 +29,12 @@ class Index extends Component
     public function clearFilter(): void
     {
         $this->status = null;
+    }
+
+    #[On('task-saved')]
+    public function refreshTasks(): void
+    {
+        // Component will automatically re-render
     }
 
     #[Layout('components.layouts.app')]

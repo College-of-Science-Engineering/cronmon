@@ -12,7 +12,7 @@
                 </flux:text>
             </div>
             <div class="flex gap-2">
-                <flux:button :href="route('tasks.edit', $task)" wire:navigate icon="pencil">
+                <flux:button wire:click="$dispatch('open-task-form', {taskId: {{ $task->id }}})" icon="pencil">
                     Edit
                 </flux:button>
                 <flux:button :href="route('tasks.index')" wire:navigate variant="ghost">
@@ -272,4 +272,6 @@
             </flux:card>
         </flux:tab.panel>
     </flux:tab.group>
+
+    <livewire:scheduled-tasks.task-form-modal />
 </div>

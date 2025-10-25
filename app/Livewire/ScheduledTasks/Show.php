@@ -4,6 +4,7 @@ namespace App\Livewire\ScheduledTasks;
 
 use App\Models\ScheduledTask;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Show extends Component
@@ -15,6 +16,12 @@ class Show extends Component
     public function mount(ScheduledTask $task): void
     {
         $this->task = $task;
+    }
+
+    #[On('task-saved')]
+    public function refreshTask(): void
+    {
+        $this->task->refresh();
     }
 
     #[Layout('components.layouts.app')]

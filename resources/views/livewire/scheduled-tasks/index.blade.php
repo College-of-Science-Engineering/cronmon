@@ -2,7 +2,7 @@
     <div class="mb-6">
         <div class="flex items-center justify-between">
             <flux:heading size="xl">Scheduled Tasks</flux:heading>
-            <flux:button :href="route('tasks.create')" wire:navigate icon="plus">
+            <flux:button wire:click="$dispatch('open-task-form')" icon="plus">
                 New Task
             </flux:button>
         </div>
@@ -38,7 +38,7 @@
                 @else
                     <flux:heading size="lg" class="mt-4">No tasks yet</flux:heading>
                     <flux:text class="mt-2">Get started by creating your first scheduled task.</flux:text>
-                    <flux:button :href="route('tasks.create')" wire:navigate class="mt-6" icon="plus">
+                    <flux:button wire:click="$dispatch('open-task-form')" class="mt-6" icon="plus">
                         Create Task
                     </flux:button>
                 @endif
@@ -99,7 +99,7 @@
                         <flux:table.cell>
                             <div class="flex items-center gap-2 justify-end">
                                 <flux:button :href="route('tasks.show', $task)" wire:navigate size="sm" variant="ghost" icon="eye" />
-                                <flux:button :href="route('tasks.edit', $task)" wire:navigate size="sm" variant="ghost" icon="pencil" />
+                                <flux:button wire:click="$dispatch('open-task-form', {taskId: {{ $task->id }}})" size="sm" variant="ghost" icon="pencil" />
                                 <flux:button wire:click="delete({{ $task->id }})" wire:confirm="Are you sure you want to delete this task?" size="sm" variant="ghost" icon="trash" />
                             </div>
                         </flux:table.cell>
@@ -108,4 +108,6 @@
             </flux:table.rows>
         </flux:table>
     @endif
+
+    <livewire:scheduled-tasks.task-form-modal />
 </div>

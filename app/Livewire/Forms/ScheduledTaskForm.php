@@ -41,7 +41,7 @@ class ScheduledTaskForm extends Form
         $this->grace_period_minutes = $task->grace_period_minutes;
     }
 
-    public function save(): ScheduledTask
+    public function save(?int $team_id = null): ScheduledTask
     {
         $this->validate();
 
@@ -59,7 +59,7 @@ class ScheduledTaskForm extends Form
         }
 
         return ScheduledTask::create([
-            'team_id' => auth()->user()->teams()->first()->id,
+            'team_id' => $team_id ?? auth()->user()->personalTeam()->id,
             'created_by' => auth()->id(),
             'name' => $this->name,
             'description' => $this->description,

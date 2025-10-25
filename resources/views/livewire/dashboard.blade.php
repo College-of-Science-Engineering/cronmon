@@ -3,7 +3,7 @@
     <div class="mb-6">
         <div class="flex items-center justify-between">
             <flux:heading size="xl">Dashboard</flux:heading>
-            <flux:button :href="route('tasks.create')" wire:navigate icon="plus">
+            <flux:button wire:click="$dispatch('open-task-form')" icon="plus">
                 New Task
             </flux:button>
         </div>
@@ -136,4 +136,6 @@
             @endif
         </div>
     </div>
+
+    <livewire:scheduled-tasks.task-form-modal />
 </div>
