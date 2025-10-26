@@ -34,16 +34,13 @@ class Team extends Model
         return $this->hasMany(ScheduledTask::class);
     }
 
-    public function isPersonalTeam(?User $user = null): bool
+    public function isPersonalTeam(): bool
     {
-        if ($user === null) {
-            $user = auth()->user();
-        }
+        return User::where('personal_team_id', $this->id)->exists();
+    }
 
-        if ($user === null) {
-            return false;
-        }
-
+    public function isPersonalTeamForUser(User $user): bool
+    {
         return $this->id === $user->personal_team_id;
     }
 
