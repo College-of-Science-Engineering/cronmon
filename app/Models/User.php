@@ -53,21 +53,6 @@ class User extends Authenticatable
         ];
     }
 
-    public function teams(): BelongsToMany
-    {
-        return $this->belongsToMany(Team::class);
-    }
-
-    public function personalTeam(): ?Team
-    {
-        return $this->teams()->where('teams.name', $this->username)->first();
-    }
-
-    public function getNameAttribute(): string
-    {
-        return trim("{$this->forenames} {$this->surname}");
-    }
-
     protected static function booted(): void
     {
         static::created(function (User $user) {
@@ -78,5 +63,20 @@ class User extends Authenticatable
 
             $team->users()->attach($user);
         });
+    }
+
+    public function teams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class);
+    }
+
+    public function personalTeam(): ?Team
+    {
+        return $this->teams()->where('teams.name', $this->username)->first();
+    }
+
+    public function getFullNameAttribute(): string
+    {
+        return trim("{$this->forenames} {$this->surname}");
     }
 }

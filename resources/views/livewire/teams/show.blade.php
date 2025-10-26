@@ -49,7 +49,7 @@
                         @foreach($members as $member)
                             <flux:table.row :key="$member->id">
                                 <flux:table.cell>
-                                    <flux:text>{{ $member->name }}</flux:text>
+                                    <flux:text>{{ $member->full_name }}</flux:text>
                                 </flux:table.cell>
 
                                 <flux:table.cell>
