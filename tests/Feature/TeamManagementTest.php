@@ -14,7 +14,7 @@ it('does not delete a personal team', function () {
         'username' => 'jdoe',
     ]);
 
-    $team = $user->personalTeam(); // Use auto-created personal team
+    $team = $user->personalTeam;
 
     $this->actingAs($user);
 

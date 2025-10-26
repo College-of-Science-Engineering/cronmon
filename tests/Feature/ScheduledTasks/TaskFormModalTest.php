@@ -15,8 +15,6 @@ uses()->group('scheduled-tasks');
 it('can open create modal', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
 
     // Act & Assert
     actingAs($user);
@@ -30,31 +28,26 @@ it('can open create modal', function () {
 it('defaults to personal team on create', function () {
     // Arrange
     $user = User::factory()->create();
-    $personalTeam = Team::factory()->create(['name' => $user->username]);
     $otherTeam = Team::factory()->create(['name' => 'Other Team']);
-    $user->teams()->attach([$personalTeam->id, $otherTeam->id]);
+    $user->teams()->attach([$otherTeam->id]);
 
     // Act & Assert
     actingAs($user);
 
     $component = Livewire::test(TaskFormModal::class);
 
-    // Component should default to the team whose name matches the username
-    $selectedTeam = Team::find($component->get('team_id'));
-    expect($selectedTeam->name)->toBe($user->username);
+    // Component should default to the user's personal team
+    expect($component->get('team_id'))->toBe($user->personal_team_id);
 });
 
 it('can create a task with simple schedule', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
 
     // Act
     actingAs($user);
     Livewire::test(TaskFormModal::class)
         ->dispatch('open-task-form')
-        ->set('team_id', $team->id)
         ->set('form.name', 'Test Task')
         ->set('form.description', 'Test description')
         ->set('form.schedule_type', 'simple')
@@ -68,7 +61,7 @@ it('can create a task with simple schedule', function () {
     // Assert
     $task = ScheduledTask::where('name', 'Test Task')->first();
     expect($task)->not->toBeNull();
-    expect($task->team_id)->toBe($team->id);
+    expect($task->team_id)->toBe($user->personal_team_id);
     expect($task->created_by)->toBe($user->id);
     expect($task->schedule_type)->toBe('simple');
     expect($task->schedule_value)->toBe('1h');
@@ -78,14 +71,11 @@ it('can create a task with simple schedule', function () {
 it('can create a task with cron schedule', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
 
     // Act
     actingAs($user);
     Livewire::test(TaskFormModal::class)
         ->dispatch('open-task-form')
-        ->set('team_id', $team->id)
         ->set('form.name', 'Cron Task')
         ->set('form.schedule_type', 'cron')
         ->set('form.schedule_value', '0 3 * * *')
@@ -101,8 +91,6 @@ it('can create a task with cron schedule', function () {
 it('validates required fields on create', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
 
     // Act & Assert
     actingAs($user);
@@ -119,9 +107,7 @@ it('validates required fields on create', function () {
 it('can open edit modal with existing task', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
-    $task = ScheduledTask::factory()->for($team)->create([
+    $task = ScheduledTask::factory()->for($user->personalTeam)->create([
         'created_by' => $user->id,
         'name' => 'Existing Task',
         'schedule_type' => 'simple',
@@ -137,15 +123,13 @@ it('can open edit modal with existing task', function () {
         ->assertSet('form.name', 'Existing Task')
         ->assertSet('form.schedule_type', 'simple')
         ->assertSet('form.schedule_value', '1h')
-        ->assertSet('team_id', $team->id);
+        ->assertSet('team_id', $user->personal_team_id);
 });
 
 it('can update an existing task', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
-    $task = ScheduledTask::factory()->for($team)->create([
+    $task = ScheduledTask::factory()->for($user->personalTeam)->create([
         'created_by' => $user->id,
         'name' => 'Original Name',
         'description' => 'Original description',
@@ -169,15 +153,13 @@ it('can update an existing task', function () {
     expect($task->name)->toBe('Updated Name');
     expect($task->description)->toBe('Updated description');
     expect($task->schedule_value)->toBe('6h');
-    expect($task->team_id)->toBe($team->id); // Team unchanged
+    expect($task->team_id)->toBe($user->personal_team_id); // Team unchanged
 });
 
 it('validates required fields on update', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
-    $task = ScheduledTask::factory()->for($team)->create([
+    $task = ScheduledTask::factory()->for($user->personalTeam)->create([
         'created_by' => $user->id,
         'name' => 'Original Name',
     ]);
@@ -198,9 +180,7 @@ it('validates required fields on update', function () {
 it('prevents editing tasks from teams user does not belong to', function () {
     // Arrange
     $user = User::factory()->create();
-    $userTeam = Team::factory()->create();
     $otherTeam = Team::factory()->create();
-    $user->teams()->attach($userTeam);
     $task = ScheduledTask::factory()->for($otherTeam)->create();
 
     // Act & Assert
@@ -248,9 +228,8 @@ it('can change team when editing', function () {
 it('can create task for specific team', function () {
     // Arrange
     $user = User::factory()->create();
-    $personalTeam = Team::factory()->create(['name' => $user->username]);
     $workTeam = Team::factory()->create(['name' => 'Work Team']);
-    $user->teams()->attach([$personalTeam->id, $workTeam->id]);
+    $user->teams()->attach([$workTeam->id]);
 
     // Act
     actingAs($user);
@@ -271,9 +250,7 @@ it('can create task for specific team', function () {
 it('resets form when opening create modal after edit', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
-    $task = ScheduledTask::factory()->for($team)->create([
+    $task = ScheduledTask::factory()->for($user->personalTeam)->create([
         'created_by' => $user->id,
         'name' => 'Existing Task',
     ]);
@@ -291,9 +268,6 @@ it('resets form when opening create modal after edit', function () {
 it('redirects to task show page after create', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
-
     // Act & Assert
     actingAs($user);
     Livewire::test(TaskFormModal::class)
@@ -308,9 +282,7 @@ it('redirects to task show page after create', function () {
 it('redirects to task show page after update', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
-    $task = ScheduledTask::factory()->for($team)->create([
+    $task = ScheduledTask::factory()->for($user->personalTeam)->create([
         'created_by' => $user->id,
         'name' => 'Original Task',
     ]);
@@ -327,8 +299,6 @@ it('redirects to task show page after update', function () {
 it('validates timezone is valid', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
 
     // Act & Assert
     actingAs($user);
@@ -345,8 +315,6 @@ it('validates timezone is valid', function () {
 it('validates grace period is between 1 and 1440 minutes', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
 
     // Act & Assert - too low
     actingAs($user);
@@ -367,8 +335,6 @@ it('validates grace period is between 1 and 1440 minutes', function () {
 it('generates unique check-in token on create', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $user->teams()->attach($team);
 
     // Act
     actingAs($user);

@@ -36,7 +36,7 @@
                                 <flux:link :href="route('teams.show', $team)" wire:navigate class="font-medium">
                                     {{ $team->name }}
                                 </flux:link>
-                                @if($team->isPersonalTeam())
+                                @if($team->id === auth()->user()->personal_team_id)
                                     <flux:badge color="zinc" size="sm">Personal</flux:badge>
                                 @endif
                             </div>

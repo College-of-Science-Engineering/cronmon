@@ -44,7 +44,7 @@ class Team extends Model
             return false;
         }
 
-        return $this->name === $user->username;
+        return $this->id === $user->personal_team_id;
     }
 
     public function isSilenced(): bool

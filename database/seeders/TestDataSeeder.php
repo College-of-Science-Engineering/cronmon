@@ -45,25 +45,59 @@ class TestDataSeeder extends Seeder
             'name' => 'admin2x',
             'slug' => 'admin2x',
         ]);
-        $adminTeam->users()->attach($admin);
+        $admin->teams()->attach($adminTeam);
+        $admin->personal_team_id = $adminTeam->id;
+        $admin->save();
 
         $personalTeam1 = Team::create([
             'name' => 'abc1x',
             'slug' => 'abc1x',
         ]);
         $personalTeam1->users()->attach($user1);
+        $user1->personal_team_id = $personalTeam1->id;
+        $user1->save();
 
         $personalTeam2 = Team::create([
             'name' => 'def2y',
             'slug' => 'def2y',
         ]);
-        $personalTeam2->users()->attach($user2);
+        $user2->teams()->attach($personalTeam2);
+        $user2->personal_team_id = $personalTeam2->id;
+        $user2->save();
 
         $sharedTeam = Team::create([
             'name' => 'DevOps Team',
             'slug' => 'devops-team',
         ]);
         $sharedTeam->users()->attach([$user1->id, $user2->id]);
+
+        // create two admin tasks
+        ScheduledTask::create([
+            'team_id' => $adminTeam->id,
+            'created_by' => $admin->id,
+            'name' => 'Admin Task 1',
+            'description' => 'Admin task 1',
+            'schedule_type' => 'simple',
+            'schedule_value' => '5m',
+            'timezone' => 'UTC',
+            'grace_period_minutes' => 30,
+            'unique_check_in_token' => Str::uuid()->toString(),
+            'last_checked_in_at' => now()->subMinutes(rand(1, 5)),
+            'status' => 'ok',
+        ]);
+        ScheduledTask::create([
+            'team_id' => $adminTeam->id,
+            'created_by' => $admin->id,
+            'name' => 'Admin Task 2',
+            'description' => 'Admin task 2',
+            'schedule_type' => 'simple',
+            'schedule_value' => '1h',
+            'timezone' => 'UTC',
+            'grace_period_minutes' => 30,
+            'unique_check_in_token' => Str::uuid()->toString(),
+            'last_checked_in_at' => now()->subMinutes(rand(1, 50)),
+            'status' => 'ok',
+        ]);
 
         // Task 1: Healthy task with good check-in history (for chart visualization)
         $task1 = ScheduledTask::create([

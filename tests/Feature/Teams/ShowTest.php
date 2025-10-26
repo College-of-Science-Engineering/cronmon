@@ -185,12 +185,10 @@ it('shows delete team button for non-personal teams', function () {
 it('hides delete team button for personal teams', function () {
     // Arrange
     $user = User::factory()->create(['username' => 'johndoe']);
-    $personalTeam = Team::factory()->create(['name' => 'johndoe']);
-    $personalTeam->users()->attach($user);
 
     // Act & Assert
     $response = $this->actingAs($user)
-        ->get("/teams/{$personalTeam->id}");
+        ->get("/teams/{$user->personal_team_id}");
 
     // Verify the Personal badge is shown (confirming it's recognized as personal)
     $response->assertSee('Personal');

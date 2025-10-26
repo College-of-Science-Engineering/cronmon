@@ -62,7 +62,7 @@ class ScheduledTaskForm extends Form
         }
 
         return ScheduledTask::create([
-            'team_id' => $team_id ?? auth()->user()->personalTeam()->id,
+            'team_id' => $team_id ?? auth()->user()->personal_team_id,
             'created_by' => auth()->id(),
             'name' => $this->name,
             'description' => $this->description,

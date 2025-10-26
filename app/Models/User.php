@@ -3,10 +3,11 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
@@ -26,6 +27,7 @@ class User extends Authenticatable
         'is_staff',
         'is_admin',
         'password',
+        'personal_team_id',
     ];
 
     /**
@@ -56,12 +58,13 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::created(function (User $user) {
-            $team = Team::create([
+            $team = $user->personalTeam()->create([
                 'name' => $user->username,
                 'slug' => $user->username,
             ]);
-
-            $team->users()->attach($user);
+            $user->teams()->attach($team);
+            $user->personal_team_id = $team->id;
+            $user->save();
         });
     }
 
@@ -70,9 +73,9 @@ class User extends Authenticatable
         return $this->belongsToMany(Team::class);
     }
 
-    public function personalTeam(): ?Team
+    public function personalTeam(): HasOne
     {
-        return $this->teams()->where('teams.name', $this->username)->first();
+        return $this->hasOne(Team::class, 'id', 'personal_team_id');
     }
 
     public function getFullNameAttribute(): string

@@ -132,23 +132,21 @@ it('can filter tasks by status via URL', function () {
 it('can switch between filters', function () {
     // Arrange
     $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $team->users()->attach($user);
 
     ScheduledTask::factory()->create([
-        'team_id' => $team->id,
+        'team_id' => $user->personal_team_id,
         'status' => 'ok',
         'name' => 'OK Task',
     ]);
 
     ScheduledTask::factory()->create([
-        'team_id' => $team->id,
+        'team_id' => $user->personal_team_id,
         'status' => 'alerting',
         'name' => 'Alert Task',
     ]);
 
     ScheduledTask::factory()->create([
-        'team_id' => $team->id,
+        'team_id' => $user->personal_team_id,
         'status' => 'paused',
         'name' => 'Paused Task',
     ]);
@@ -354,7 +352,7 @@ it('can filter to only personal team tasks via myTasksOnly toggle', function () 
     $otherTeam->users()->attach($user);
 
     $personalTask = ScheduledTask::factory()->create([
-        'team_id' => $user->personalTeam()->id,
+        'team_id' => $user->personal_team_id,
         'name' => 'My Personal Task',
     ]);
 
@@ -379,7 +377,7 @@ it('shows all tasks when myTasksOnly is false', function () {
     $otherTeam = Team::factory()->create(['name' => 'Engineering']);
 
     $personalTask = ScheduledTask::factory()->create([
-        'team_id' => $user->personalTeam()->id,
+        'team_id' => $user->personal_team_id,
         'name' => 'My Personal Task',
     ]);
 
@@ -404,7 +402,7 @@ it('can filter by myTasksOnly via URL parameter', function () {
     $otherTeam = Team::factory()->create();
 
     $personalTask = ScheduledTask::factory()->create([
-        'team_id' => $user->personalTeam()->id,
+        'team_id' => $user->personal_team_id,
         'name' => 'Personal Task',
     ]);
 
@@ -425,13 +423,13 @@ it('can combine myTasksOnly with status filter', function () {
     $user = User::factory()->create(['username' => 'dave']);
 
     ScheduledTask::factory()->create([
-        'team_id' => $user->personalTeam()->id,
+        'team_id' => $user->personal_team_id,
         'status' => 'ok',
         'name' => 'Personal OK',
     ]);
 
     ScheduledTask::factory()->create([
-        'team_id' => $user->personalTeam()->id,
+        'team_id' => $user->personal_team_id,
         'status' => 'alerting',
         'name' => 'Personal Alert',
     ]);

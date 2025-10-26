@@ -42,8 +42,7 @@ class Index extends Component
     {
         $query = ScheduledTask::with(['team', 'creator'])
             ->when($this->myTasksOnly, function ($query) {
-                $personalTeam = auth()->user()->personalTeam();
-                $query->where('team_id', $personalTeam->id);
+                $query->where('team_id', auth()->user()->personal_team_id);
             })
             ->when($this->status, function ($query) {
                 $query->where('status', $this->status);

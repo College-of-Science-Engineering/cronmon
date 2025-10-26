@@ -20,7 +20,7 @@ class TaskFormModal extends Component
 
     public function mount(): void
     {
-        $this->team_id = auth()->user()->personalTeam()->id;
+        $this->team_id = auth()->user()->personal_team_id;
     }
 
     #[On('open-task-form')]
@@ -35,7 +35,7 @@ class TaskFormModal extends Component
             $this->team_id = $task->team_id;
         } else {
             $this->form->reset();
-            $this->team_id = auth()->user()->personalTeam()->id;
+            $this->team_id = auth()->user()->personal_team_id;
         }
 
         $this->showModal = true;

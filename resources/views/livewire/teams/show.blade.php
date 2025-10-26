@@ -5,7 +5,7 @@
             <div>
                 <div class="flex items-center gap-2">
                     <flux:heading size="xl">{{ $team->name }}</flux:heading>
-                    @if($team->isPersonalTeam())
+                    @if($team->id === auth()->user()->personal_team_id)
                         <flux:badge color="zinc">Personal</flux:badge>
                     @endif
                 </div>
@@ -14,7 +14,7 @@
                 </flux:text>
             </div>
             <div class="flex gap-2">
-                @if(!$team->isPersonalTeam())
+                @if(!auth()->user()->personal_team_id === $team->id)
                     <flux:button wire:click="deleteTeam" variant="danger" icon="trash">
                         Delete Team
                     </flux:button>
