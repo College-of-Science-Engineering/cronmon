@@ -74,7 +74,7 @@ it('always displays at least personal team for new users', function () {
     $this->actingAs($user)
         ->get('/teams')
         ->assertSee('alice')
-        ->assertSee('Personal')
+        ->assertSee('Yours')
         ->assertDontSee('No teams yet');
 });
 
@@ -91,8 +91,8 @@ it('shows create team button', function () {
 it('indicates which teams are personal teams', function () {
     // Arrange
     $user = User::factory()->create(['username' => 'johndoe']);
-    $personalTeam = Team::factory()->create(['name' => 'johndoe']);
-    $personalTeam->users()->attach($user);
+
+    $otherUser = User::factory()->create(['username' => 'janedoe']);
 
     $regularTeam = Team::factory()->create(['name' => 'Engineering']);
     $regularTeam->users()->attach($user);
@@ -100,7 +100,7 @@ it('indicates which teams are personal teams', function () {
     // Act & Assert
     $this->actingAs($user)
         ->get('/teams')
-        ->assertSee('Personal'); // badge or indicator
+        ->assertSeeInOrder(['johndoe', 'Yours', 'janedoe', 'Personal']);
 });
 
 // Note: Authentication tests skipped - SSO not yet implemented

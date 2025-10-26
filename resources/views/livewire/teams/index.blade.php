@@ -37,6 +37,8 @@
                                     {{ $team->name }}
                                 </flux:link>
                                 @if($team->id === auth()->user()->personal_team_id)
+                                    <flux:badge color="zinc" size="sm">Yours</flux:badge>
+                                @elseif($team->isPersonalTeam())
                                     <flux:badge color="zinc" size="sm">Personal</flux:badge>
                                 @endif
                             </div>
