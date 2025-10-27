@@ -20,10 +20,14 @@ class PingController extends Controller
             ], 404);
         }
 
+        // Determine ping type from query parameters
+        $isStart = $request->has('start');
+        $isFinish = $request->has('finish');
+
         // Dispatch job to record check-in
         $validated = $request->validated();
 
-        RecordTaskCheckIn::dispatch($task, $validated['data'] ?? null);
+        RecordTaskCheckIn::dispatch($task, $validated['data'] ?? null, $isStart, $isFinish);
 
         return response()->json([
             'message' => 'Check-in recorded',

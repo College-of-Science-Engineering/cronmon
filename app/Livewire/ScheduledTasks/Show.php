@@ -37,8 +37,12 @@ class Show extends Component
         // Prepare chart data from last 30 task runs
         $chartData = $this->prepareChartData();
 
+        // Get currently running task run (if any)
+        $runningTaskRun = $this->task->currentlyRunningTaskRun();
+
         return view('livewire.scheduled-tasks.show', [
             'chartData' => $chartData,
+            'runningTaskRun' => $runningTaskRun,
         ]);
     }
 
@@ -57,7 +61,7 @@ class Show extends Component
         return $runs->map(function ($run) {
             return [
                 'date' => $run->checked_in_at->format('M j'),
-                'execution_time' => $run->data['execution_time'] ?? 0,
+                'execution_time' => $run->execution_time_seconds ?? ($run->data['execution_time'] ?? 0),
             ];
         })->toArray();
     }

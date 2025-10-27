@@ -269,3 +269,216 @@ it('does not create TaskRun for invalid token', function () {
     // Assert
     expect(TaskRun::count())->toBe($initialCount);
 });
+
+// Start/Finish Tracking Tests
+
+it('can ping with start parameter', function () {
+    // Arrange
+    $task = ScheduledTask::factory()->create(['status' => 'pending']);
+
+    // Act
+    $response = $this->get("/ping/{$task->unique_check_in_token}?start");
+
+    // Assert
+    $response->assertSuccessful();
+    $response->assertJson(['message' => 'Check-in recorded']);
+
+    $taskRun = TaskRun::where('scheduled_task_id', $task->id)->first();
+    expect($taskRun)->not->toBeNull();
+    expect($taskRun->started_at)->not->toBeNull();
+    expect($taskRun->finished_at)->toBeNull();
+    expect($taskRun->execution_time_seconds)->toBeNull();
+});
+
+it('does not update task status on start ping', function () {
+    // Arrange
+    $task = ScheduledTask::factory()->create([
+        'status' => 'pending',
+        'last_checked_in_at' => null,
+    ]);
+
+    // Act
+    $this->get("/ping/{$task->unique_check_in_token}?start");
+
+    // Assert
+    $task->refresh();
+    expect($task->status)->toBe('pending');
+    expect($task->last_checked_in_at)->toBeNull();
+});
+
+it('can ping with finish parameter after start', function () {
+    // Arrange
+    $task = ScheduledTask::factory()->create(['status' => 'pending']);
+
+    // Act - start then finish
+    $this->get("/ping/{$task->unique_check_in_token}?start");
+    sleep(2); // Ensure execution time is measurable
+    $this->get("/ping/{$task->unique_check_in_token}?finish");
+
+    // Assert
+    $taskRun = TaskRun::where('scheduled_task_id', $task->id)->first();
+    expect($taskRun)->not->toBeNull();
+    expect($taskRun->started_at)->not->toBeNull();
+    expect($taskRun->finished_at)->not->toBeNull();
+    expect($taskRun->execution_time_seconds)->toBeGreaterThanOrEqual(2);
+});
+
+it('updates task status to ok on finish ping', function () {
+    // Arrange
+    $task = ScheduledTask::factory()->create(['status' => 'pending']);
+
+    // Act
+    $this->get("/ping/{$task->unique_check_in_token}?start");
+    $this->get("/ping/{$task->unique_check_in_token}?finish");
+
+    // Assert
+    $task->refresh();
+    expect($task->status)->toBe('ok');
+    expect($task->last_checked_in_at)->not->toBeNull();
+});
+
+it('can ping with finish parameter without prior start', function () {
+    // Arrange
+    $task = ScheduledTask::factory()->create(['status' => 'pending']);
+
+    // Act
+    $response = $this->get("/ping/{$task->unique_check_in_token}?finish");
+
+    // Assert
+    $response->assertSuccessful();
+
+    $taskRun = TaskRun::where('scheduled_task_id', $task->id)->first();
+    expect($taskRun)->not->toBeNull();
+    expect($taskRun->started_at)->toBeNull();
+    expect($taskRun->finished_at)->not->toBeNull();
+    expect($taskRun->execution_time_seconds)->toBeNull();
+
+    $task->refresh();
+    expect($task->status)->toBe('ok');
+});
+
+it('handles multiple starts without finish', function () {
+    // Arrange
+    $task = ScheduledTask::factory()->create();
+
+    // Act - send multiple start pings
+    $this->get("/ping/{$task->unique_check_in_token}?start");
+    sleep(1);
+    $this->get("/ping/{$task->unique_check_in_token}?start");
+    sleep(1);
+    $this->get("/ping/{$task->unique_check_in_token}?start");
+
+    // Assert - should have 3 incomplete TaskRuns
+    $incompleteRuns = TaskRun::where('scheduled_task_id', $task->id)
+        ->whereNotNull('started_at')
+        ->whereNull('finished_at')
+        ->count();
+    expect($incompleteRuns)->toBe(3);
+});
+
+it('completes most recent start when finish arrives', function () {
+    // Arrange
+    $task = ScheduledTask::factory()->create();
+
+    // Act - multiple starts, then one finish
+    $this->get("/ping/{$task->unique_check_in_token}?start");
+    sleep(1);
+    $this->get("/ping/{$task->unique_check_in_token}?start");
+    sleep(1);
+    $this->get("/ping/{$task->unique_check_in_token}?start");
+    sleep(1);
+    $this->get("/ping/{$task->unique_check_in_token}?finish");
+
+    // Assert - only the most recent start should be completed
+    $completedRuns = TaskRun::where('scheduled_task_id', $task->id)
+        ->whereNotNull('started_at')
+        ->whereNotNull('finished_at')
+        ->count();
+    expect($completedRuns)->toBe(1);
+
+    $incompleteRuns = TaskRun::where('scheduled_task_id', $task->id)
+        ->whereNotNull('started_at')
+        ->whereNull('finished_at')
+        ->count();
+    expect($incompleteRuns)->toBe(2);
+});
+
+it('calculates execution time correctly', function () {
+    // Arrange
+    $task = ScheduledTask::factory()->create();
+
+    // Act
+    $this->get("/ping/{$task->unique_check_in_token}?start");
+    sleep(3);
+    $this->get("/ping/{$task->unique_check_in_token}?finish");
+
+    // Assert
+    $taskRun = TaskRun::where('scheduled_task_id', $task->id)
+        ->whereNotNull('finished_at')
+        ->first();
+
+    expect($taskRun->execution_time_seconds)->toBeGreaterThanOrEqual(3);
+    expect($taskRun->execution_time_seconds)->toBeLessThan(5); // Should be close to 3
+});
+
+it('can include data with start ping', function () {
+    // Arrange
+    $task = ScheduledTask::factory()->create();
+    $data = ['started_by' => 'cron', 'batch_id' => 123];
+
+    // Act
+    $response = $this->postJson("/ping/{$task->unique_check_in_token}?start", [
+        'data' => $data,
+    ]);
+
+    // Assert
+    $response->assertSuccessful();
+
+    $taskRun = TaskRun::where('scheduled_task_id', $task->id)->first();
+    expect($taskRun->data)->toBe($data);
+    expect($taskRun->started_at)->not->toBeNull();
+    expect($taskRun->finished_at)->toBeNull();
+});
+
+it('can include data with finish ping', function () {
+    // Arrange
+    $task = ScheduledTask::factory()->create();
+    $data = ['records_processed' => 450, 'status' => 'success'];
+
+    // Act
+    $this->get("/ping/{$task->unique_check_in_token}?start");
+    $response = $this->postJson("/ping/{$task->unique_check_in_token}?finish", [
+        'data' => $data,
+    ]);
+
+    // Assert
+    $response->assertSuccessful();
+
+    // Note: Finish ping doesn't update data on existing incomplete run
+    // It would only set data if creating a new TaskRun (finish without start)
+    $taskRun = TaskRun::where('scheduled_task_id', $task->id)
+        ->whereNotNull('finished_at')
+        ->first();
+    expect($taskRun)->not->toBeNull();
+});
+
+it('plain ping still works as before', function () {
+    // Arrange
+    $task = ScheduledTask::factory()->create(['status' => 'pending']);
+
+    // Act
+    $response = $this->get("/ping/{$task->unique_check_in_token}");
+
+    // Assert
+    $response->assertSuccessful();
+
+    $taskRun = TaskRun::where('scheduled_task_id', $task->id)->first();
+    expect($taskRun->started_at)->toBeNull();
+    expect($taskRun->finished_at)->toBeNull();
+    expect($taskRun->execution_time_seconds)->toBeNull();
+    expect($taskRun->checked_in_at)->not->toBeNull();
+
+    $task->refresh();
+    expect($task->status)->toBe('ok');
+    expect($task->last_checked_in_at)->not->toBeNull();
+});

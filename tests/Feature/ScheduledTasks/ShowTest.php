@@ -46,7 +46,7 @@ it('displays task status with correct badge color', function () {
     // Act & Assert
     $this->actingAs($user)
         ->get("/tasks/{$task->id}")
-        ->assertSee('OK');
+        ->assertSee('Ok');
 });
 
 it('displays team name', function () {
@@ -490,8 +490,9 @@ it('has api tab with advanced examples', function () {
         ->get(route('tasks.show', $task))
         ->assertSee('API')
         ->assertSee('Basic GET Request')
+        ->assertSee('Track Execution Time (Start/Finish)')
         ->assertSee('POST with JSON Data')
-        ->assertSee('From Your Cron Job');
+        ->assertSee('Simple Cron Job Integration');
 });
 
 it('api tab displays actual task ping url in all examples', function () {
@@ -507,6 +508,7 @@ it('api tab displays actual task ping url in all examples', function () {
     $response = $this->actingAs($user)
         ->get(route('tasks.show', $task));
 
-    // Should appear in Details tab (Quick Start) + API tab (3 examples) = 4 times
-    expect(substr_count($response->getContent(), $pingUrl))->toBe(4);
+    // Should appear in API tab (4 examples: basic GET, start, finish, simple cron) = 4 times
+    // Note: Start/finish section has 2 curl calls
+    expect(substr_count($response->getContent(), $pingUrl))->toBe(6);
 });

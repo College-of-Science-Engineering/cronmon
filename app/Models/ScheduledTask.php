@@ -99,4 +99,13 @@ class ScheduledTask extends Model
 
         return null;
     }
+
+    public function currentlyRunningTaskRun(): ?TaskRun
+    {
+        return $this->taskRuns()
+            ->whereNotNull('started_at')
+            ->whereNull('finished_at')
+            ->latest('started_at')
+            ->first();
+    }
 }

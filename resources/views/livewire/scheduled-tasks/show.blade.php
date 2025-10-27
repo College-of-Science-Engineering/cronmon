@@ -19,9 +19,17 @@
                         @if($task->description)
                             {{ $task->description }} •
                         @endif
-                        Last check-in: {{ $task->last_checked_in_at?->diffForHumans() ?? 'Never' }}
+                        Last completed: {{ $task->last_checked_in_at?->diffForHumans() ?? 'Never' }}
                     </flux:text>
                 </div>
+
+                @if($runningTaskRun)
+                    <div class="mt-2">
+                        <flux:badge color="blue" class="animate-pulse">
+                            Currently Running: started {{ $runningTaskRun->started_at->diffForHumans() }}
+                        </flux:badge>
+                    </div>
+                @endif
 
             </div>
             <div class="flex gap-2">
@@ -156,6 +164,7 @@
                         <flux:table.column>Expected At</flux:table.column>
                         <flux:table.column>Status</flux:table.column>
                         <flux:table.column>Lateness</flux:table.column>
+                        <flux:table.column>Execution Time</flux:table.column>
                     </flux:table.columns>
 
                     <flux:table.rows>
@@ -170,13 +179,25 @@
                                 </flux:table.cell>
 
                                 <flux:table.cell>
-                                    <flux:badge :color="$run->was_late ? 'red' : 'green'">
-                                        {{ $run->was_late ? 'Late' : 'On Time' }}
-                                    </flux:badge>
+                                    @if($run->isRunning())
+                                        <flux:badge color="blue">Running...</flux:badge>
+                                    @elseif($run->was_late)
+                                        <flux:badge color="red">Late</flux:badge>
+                                    @else
+                                        <flux:badge color="green">On Time</flux:badge>
+                                    @endif
                                 </flux:table.cell>
 
                                 <flux:table.cell>
                                     <flux:text>{{ $run->lateness_minutes ? $run->lateness_minutes . ' min' : '-' }}</flux:text>
+                                </flux:table.cell>
+
+                                <flux:table.cell>
+                                    @if($run->isRunning())
+                                        <flux:text class="text-zinc-500">Started {{ $run->started_at->diffForHumans() }}</flux:text>
+                                    @else
+                                        <flux:text>{{ $run->executionTime() ?? '-' }}</flux:text>
+                                    @endif
                                 </flux:table.cell>
                             </flux:table.row>
                         @endforeach
@@ -250,17 +271,32 @@
                     <flux:separator />
 
                     <div>
-                        <flux:heading size="sm">POST with JSON Data</flux:heading>
-                        <flux:text class="mt-1 mb-2">Include custom data with your check-in (e.g., execution time, status, logs):</flux:text>
-                        <flux:textarea rows="3" readonly>curl -X POST {{ $task->getPingUrl() }} \
-  -H "Content-Type: application/json" \
-  -d '{"data":{"execution_time":45,"status":"success"}}'</flux:textarea>
+                        <flux:heading size="sm">Track Execution Time (Start/Finish)</flux:heading>
+                        <flux:text class="mt-1 mb-2">Ping at the start and finish of your job to track execution time:</flux:text>
+                        <flux:textarea rows="5" readonly>#!/bin/bash
+curl {{ $task->getPingUrl() }}?start
+
+# Your job commands here...
+/path/to/your/script.sh
+
+curl {{ $task->getPingUrl() }}?finish</flux:textarea>
+                        <flux:text class="mt-2 text-sm text-zinc-500">The server automatically calculates execution time. If your job hangs or fails, we'll detect it as a missed run.</flux:text>
                     </div>
 
                     <flux:separator />
 
                     <div>
-                        <flux:heading size="sm">From Your Cron Job</flux:heading>
+                        <flux:heading size="sm">POST with JSON Data</flux:heading>
+                        <flux:text class="mt-1 mb-2">Include custom data with your check-in (e.g., execution time, status, logs):</flux:text>
+                        <flux:textarea rows="3" readonly>curl -X POST {{ $task->getPingUrl() }} \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"records_processed":1250,"status":"success"}}'</flux:textarea>
+                    </div>
+
+                    <flux:separator />
+
+                    <div>
+                        <flux:heading size="sm">Simple Cron Job Integration</flux:heading>
                         <flux:text class="mt-1 mb-2">Add this to the end of your cron job command:</flux:text>
                         <flux:textarea rows="2" readonly>0 3 * * * /path/to/your/script.sh && \
   curl {{ $task->getPingUrl() }}</flux:textarea>

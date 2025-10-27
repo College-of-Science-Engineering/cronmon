@@ -32,4 +32,32 @@ class TaskRunFactory extends Factory
             'lateness_minutes' => $latenessMinutes,
         ];
     }
+
+    public function withStartFinish(): static
+    {
+        return $this->state(function (array $attributes) {
+            $startedAt = $attributes['checked_in_at'] ?? now();
+            $executionSeconds = fake()->numberBetween(30, 300);
+            $finishedAt = (clone $startedAt)->addSeconds($executionSeconds);
+
+            return [
+                'started_at' => $startedAt,
+                'finished_at' => $finishedAt,
+                'execution_time_seconds' => $executionSeconds,
+            ];
+        });
+    }
+
+    public function running(): static
+    {
+        return $this->state(function (array $attributes) {
+            $startedAt = $attributes['checked_in_at'] ?? now()->subMinutes(fake()->numberBetween(5, 120));
+
+            return [
+                'started_at' => $startedAt,
+                'finished_at' => null,
+                'execution_time_seconds' => null,
+            ];
+        });
+    }
 }

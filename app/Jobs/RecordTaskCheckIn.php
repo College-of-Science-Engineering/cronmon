@@ -16,7 +16,9 @@ class RecordTaskCheckIn implements ShouldQueue
      */
     public function __construct(
         public ScheduledTask $task,
-        public ?array $data = null
+        public ?array $data = null,
+        public bool $isStart = false,
+        public bool $isFinish = false
     ) {
         //
     }
@@ -26,12 +28,80 @@ class RecordTaskCheckIn implements ShouldQueue
      */
     public function handle(): void
     {
-        // Create TaskRun record
+        if ($this->isStart) {
+            $this->handleStartPing();
+        } elseif ($this->isFinish) {
+            $this->handleFinishPing();
+        } else {
+            $this->handlePlainPing();
+        }
+    }
+
+    protected function handleStartPing(): void
+    {
+        // Create TaskRun record with started_at, but don't update task status
         TaskRun::create([
             'scheduled_task_id' => $this->task->id,
             'checked_in_at' => now(),
-            'expected_at' => null, // Will be calculated later by background job
-            'was_late' => false, // Will be determined later by background job
+            'started_at' => now(),
+            'finished_at' => null,
+            'execution_time_seconds' => null,
+            'expected_at' => null,
+            'was_late' => false,
+            'lateness_minutes' => null,
+            'data' => $this->data,
+        ]);
+
+        // Do NOT update last_checked_in_at or status - job hasn't finished yet
+    }
+
+    protected function handleFinishPing(): void
+    {
+        // Try to find incomplete TaskRun (one with start but no finish)
+        $incompleteRun = $this->task->taskRuns()
+            ->whereNotNull('started_at')
+            ->whereNull('finished_at')
+            ->latest('started_at')
+            ->first();
+
+        if ($incompleteRun) {
+            // Complete the existing run
+            $executionSeconds = $incompleteRun->started_at->diffInSeconds(now());
+
+            $incompleteRun->update([
+                'finished_at' => now(),
+                'execution_time_seconds' => $executionSeconds,
+            ]);
+        } else {
+            // No prior start - create new TaskRun with just finish
+            TaskRun::create([
+                'scheduled_task_id' => $this->task->id,
+                'checked_in_at' => now(),
+                'started_at' => null,
+                'finished_at' => now(),
+                'execution_time_seconds' => null,
+                'expected_at' => null,
+                'was_late' => false,
+                'lateness_minutes' => null,
+                'data' => $this->data,
+            ]);
+        }
+
+        // Update task status - job is complete
+        $this->task->update([
+            'last_checked_in_at' => now(),
+            'status' => 'ok',
+        ]);
+    }
+
+    protected function handlePlainPing(): void
+    {
+        // Original behavior - simple check-in
+        TaskRun::create([
+            'scheduled_task_id' => $this->task->id,
+            'checked_in_at' => now(),
+            'expected_at' => null,
+            'was_late' => false,
             'lateness_minutes' => null,
             'data' => $this->data,
         ]);
