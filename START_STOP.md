@@ -63,6 +63,8 @@ Adding optional `?start` and `?finish` query parameters to the ping API endpoint
 
 ### Bug Fixes
 - [x] Fix chart data ordering - was showing oldest 30 runs instead of most recent 30 (Show.php:52)
+- [x] Fix chart data format - added `->values()` to re-index collection after `->reverse()` to ensure proper JavaScript array (Show.php:56)
+- [x] Fix chart X-axis clustering - changed from date labels to run numbers (1-30) to spread points across chart, moved full date/time to tooltip (Show.php:64-69, show.blade.php:55,66)
 
 ## Implementation Notes
 

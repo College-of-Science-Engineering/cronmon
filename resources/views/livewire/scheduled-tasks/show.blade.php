@@ -52,7 +52,7 @@
                     <flux:chart.svg>
                         <flux:chart.line field="execution_time" class="text-blue-500 dark:text-blue-400" />
                         <flux:chart.point field="execution_time" class="text-blue-500 dark:text-blue-400" />
-                        <flux:chart.axis axis="x" field="date">
+                        <flux:chart.axis axis="x" field="run_number">
                             <flux:chart.axis.tick />
                             <flux:chart.axis.line />
                         </flux:chart.axis>
@@ -63,7 +63,7 @@
                         <flux:chart.cursor />
                     </flux:chart.svg>
                     <flux:chart.tooltip>
-                        <flux:chart.tooltip.heading field="date" />
+                        <flux:chart.tooltip.heading field="date_time" />
                         <flux:chart.tooltip.value field="execution_time" label="Execution Time (s)" />
                     </flux:chart.tooltip>
                 </flux:chart>

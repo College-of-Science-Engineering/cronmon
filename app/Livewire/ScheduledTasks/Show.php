@@ -52,16 +52,19 @@ class Show extends Component
             ->orderBy('checked_in_at', 'desc')
             ->limit(30)
             ->get()
-            ->reverse(); // Reverse to get chronological order (oldest to newest)
+            ->reverse() // Reverse to get chronological order (oldest to newest)
+            ->values(); // Re-index to ensure proper array (not object) for JavaScript
 
         if ($runs->isEmpty()) {
             return [];
         }
 
         // Flux charts expect an array of objects with named fields
-        return $runs->map(function ($run) {
+        // Use run number for X-axis to spread points out, full date/time in tooltip
+        return $runs->map(function ($run, $index) {
             return [
-                'date' => $run->checked_in_at->format('M j'),
+                'run_number' => $index + 1,
+                'date_time' => $run->checked_in_at->format('M j, Y g:i A'),
                 'execution_time' => $run->execution_time_seconds ?? ($run->data['execution_time'] ?? 0),
             ];
         })->toArray();
