@@ -2,14 +2,27 @@
     {{-- Hero Section with Task Name and Last Check-in --}}
     <div class="mb-6">
         <div class="flex items-center justify-between">
-            <div>
-                <flux:heading size="xl">{{ $task->name }}</flux:heading>
-                <flux:text class="text-zinc-500">
-                    @if($task->description)
-                        {{ $task->description }} •
-                    @endif
-                    Last check-in: {{ $task->last_checked_in_at?->diffForHumans() ?? 'Never' }}
-                </flux:text>
+            <div class="flex flex-col gap-2">
+                <div class="flex flex-row gap-2">
+                    <flux:badge :color="match($task->status) {
+                        'ok' => 'green',
+                        'pending' => 'yellow',
+                        'alerting' => 'red',
+                        'paused' => 'zinc',
+                    }">
+                        {{ ucfirst($task->status) }}
+                    </flux:badge>
+                    <flux:heading size="xl">{{ $task->name }}</flux:heading>
+                </div>
+                <div>
+                    <flux:text class="text-zinc-500">
+                        @if($task->description)
+                            {{ $task->description }} •
+                        @endif
+                        Last check-in: {{ $task->last_checked_in_at?->diffForHumans() ?? 'Never' }}
+                    </flux:text>
+                </div>
+
             </div>
             <div class="flex gap-2">
                 <flux:button wire:click="$dispatch('open-task-form', {taskId: {{ $task->id }}})" icon="pencil">
@@ -20,21 +33,6 @@
                 </flux:button>
             </div>
         </div>
-    </div>
-
-    {{-- Prominent Status Callout --}}
-    <div class="mb-6">
-        <flux:callout :variant="match($task->status) {
-            'ok' => 'success',
-            'alerting' => 'danger',
-            'pending' => 'warning',
-            'paused' => 'neutral',
-        }">
-            <flux:callout.heading>Status</flux:callout.heading>
-            <div class="text-4xl font-bold mt-2">
-                {{ strtoupper($task->status) }}
-            </div>
-        </flux:callout>
     </div>
 
     {{-- Check-in History Chart --}}
