@@ -43,30 +43,50 @@
         </div>
     </div>
 
-    {{-- Check-in History Chart --}}
+    {{-- Check-in History --}}
     @if(!empty($chartData))
         <div class="mb-6">
             <flux:card>
                 <flux:heading size="lg" class="mb-4">Check-in History (Last 30 Runs)</flux:heading>
-                <flux:chart :value="$chartData" class="h-64">
-                    <flux:chart.svg>
-                        <flux:chart.line field="execution_time" class="text-blue-500 dark:text-blue-400" />
-                        <flux:chart.point field="execution_time" class="text-blue-500 dark:text-blue-400" />
-                        <flux:chart.axis axis="x" field="run_number">
-                            <flux:chart.axis.tick />
-                            <flux:chart.axis.line />
-                        </flux:chart.axis>
-                        <flux:chart.axis axis="y">
-                            <flux:chart.axis.grid />
-                            <flux:chart.axis.tick />
-                        </flux:chart.axis>
-                        <flux:chart.cursor />
-                    </flux:chart.svg>
-                    <flux:chart.tooltip>
-                        <flux:chart.tooltip.heading field="date_time" />
-                        <flux:chart.tooltip.value field="execution_time" label="Execution Time (s)" />
-                    </flux:chart.tooltip>
-                </flux:chart>
+
+                @if($chartData['hasExecutionTimeData'])
+                    {{-- Show execution time chart --}}
+                    <flux:chart :value="$chartData['data']" class="h-64">
+                        <flux:chart.svg>
+                            <flux:chart.line field="execution_time" class="text-blue-500 dark:text-blue-400" />
+                            <flux:chart.point field="execution_time" class="text-blue-500 dark:text-blue-400" />
+                            <flux:chart.axis axis="x" field="run_number">
+                                <flux:chart.axis.tick />
+                                <flux:chart.axis.line />
+                            </flux:chart.axis>
+                            <flux:chart.axis axis="y">
+                                <flux:chart.axis.grid />
+                                <flux:chart.axis.tick />
+                            </flux:chart.axis>
+                            <flux:chart.cursor />
+                        </flux:chart.svg>
+                        <flux:chart.tooltip>
+                            <flux:chart.tooltip.heading field="date_time" />
+                            <flux:chart.tooltip.value field="execution_time" label="Execution Time (s)" />
+                        </flux:chart.tooltip>
+                    </flux:chart>
+                @else
+                    {{-- Show status grid for tasks without execution time tracking --}}
+                    <div class="grid grid-cols-10 gap-2">
+                        @foreach($recentRuns as $index => $run)
+                            <div
+                                class="aspect-square rounded cursor-pointer transition-transform hover:scale-110 flex items-center justify-center text-white text-lg font-bold @if($run->was_late) bg-red-500 @else bg-green-500 @endif"
+                                style="text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);"
+                                title="Run #{{ $index + 1 }}: {{ $run->checked_in_at->format('M j, Y g:i A') }}{{ $run->was_late ? ' - ' . $run->lateness_minutes . ' min late' : ' - On time' }}"
+                            >
+                                {{ $index + 1 }}
+                            </div>
+                        @endforeach
+                    </div>
+                    <flux:text class="mt-4 text-sm text-zinc-500">
+                        Showing runs 1-30 (oldest to newest, left to right). Green = on time, Red = late. Hover over a box to see details.
+                    </flux:text>
+                @endif
             </flux:card>
         </div>
     @else

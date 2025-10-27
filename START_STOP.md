@@ -32,7 +32,8 @@ Adding optional `?start` and `?finish` query parameters to the ping API endpoint
 - [x] Update status callout to reflect hung jobs ("started but never finished")
 - [x] Add "Running..." badge in History tab for incomplete TaskRuns
 - [x] Show execution time for completed runs in History tab
-- [x] Consider chart updates to show execution time trends
+- [x] Add execution time trend chart (line graph for last 30 runs)
+- [x] Add visual grid fallback for tasks without execution time tracking (green/red boxes for on-time/late runs)
 
 ### UI Updates - Other Pages (Optional Polish)
 - [ ] Consider showing "Running" badge in Index task list for tasks with incomplete runs

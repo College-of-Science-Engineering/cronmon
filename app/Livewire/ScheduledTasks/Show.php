@@ -40,9 +40,18 @@ class Show extends Component
         // Get currently running task run (if any)
         $runningTaskRun = $this->task->currentlyRunningTaskRun();
 
+        // Get last 30 runs for grid view
+        $recentRuns = $this->task->taskRuns()
+            ->orderBy('checked_in_at', 'desc')
+            ->limit(30)
+            ->get()
+            ->reverse()
+            ->values();
+
         return view('livewire.scheduled-tasks.show', [
             'chartData' => $chartData,
             'runningTaskRun' => $runningTaskRun,
+            'recentRuns' => $recentRuns,
         ]);
     }
 
@@ -59,14 +68,24 @@ class Show extends Component
             return [];
         }
 
+        // Check if we have any execution time data
+        $hasExecutionTimeData = $runs->contains(function ($run) {
+            return $run->execution_time_seconds !== null && $run->execution_time_seconds > 0;
+        });
+
         // Flux charts expect an array of objects with named fields
         // Use run number for X-axis to spread points out, full date/time in tooltip
-        return $runs->map(function ($run, $index) {
+        $chartData = $runs->map(function ($run, $index) {
             return [
                 'run_number' => $index + 1,
                 'date_time' => $run->checked_in_at->format('M j, Y g:i A'),
                 'execution_time' => $run->execution_time_seconds ?? ($run->data['execution_time'] ?? 0),
             ];
         })->toArray();
+
+        return [
+            'hasExecutionTimeData' => $hasExecutionTimeData,
+            'data' => $chartData,
+        ];
     }
 }
