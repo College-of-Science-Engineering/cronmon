@@ -838,6 +838,64 @@ This trust-based approach enables features like:
    - Expired silences automatically become inactive (no cleanup job needed)
    - `alerts` table already has `acknowledged_by` and `acknowledged_at` columns
 
+7. **Start/Stop Execution Time Tracking** ✅ - Complete (2025-10-27)
+
+   **Goal:** Add optional `?start` and `?finish` query parameters to ping API endpoint to track task execution timing.
+
+   **Design Decisions:**
+   - Query parameters only (no manual timestamps from admins)
+   - Server generates timestamps automatically
+   - Start ping does NOT update `last_checked_in_at` or task status
+   - Only finish ping marks task as complete and updates status
+   - Hung jobs (start without finish) detected by existing missed task logic
+   - Finish without start accepted as normal check-in (backward compatible)
+   - Plain ping (no parameters) continues to work unchanged
+
+   **Implementation Completed:**
+   - [x] Database migration adding `started_at`, `finished_at`, `execution_time_seconds` to `task_runs` table
+   - [x] Updated TaskRun model with casts and helper methods (`isRunning()`, `isComplete()`, `executionTime()`)
+   - [x] Updated TaskRunFactory with `withStartFinish()` and `running()` states
+   - [x] Added `currentlyRunningTaskRun()` helper method to ScheduledTask model
+   - [x] Updated PingController to parse `?start` and `?finish` query parameters
+   - [x] Updated RecordTaskCheckIn job with three handlers: `handleStartPing()`, `handleFinishPing()`, `handlePlainPing()`
+   - [x] Comprehensive test coverage (13 tests for API, all passing)
+   - [x] UI Updates:
+     - "Currently Running" pulsing badge in hero section
+     - "Running..." badge in History tab for incomplete TaskRuns
+     - Execution time column in History tab
+     - Execution time trend chart (line graph) for last 30 runs
+     - Visual status grid (green/red numbered boxes) for on-time/late runs
+     - Tabbed view: "Status Grid" (always) + "Execution Time" (only when data exists)
+   - [x] API documentation updated with start/finish examples
+   - [x] Updated TestDataSeeder with realistic start/finish tracking data
+
+   **API Usage Examples:**
+   ```bash
+   # Start ping
+   curl https://cronmon.example.com/ping/TOKEN?start
+
+   # Your job commands here
+   ./backup-script.sh
+
+   # Finish ping
+   curl https://cronmon.example.com/ping/TOKEN?finish
+   ```
+
+   **Bug Fixes During Implementation:**
+   - Fixed chart data ordering (was showing oldest 30 runs instead of most recent)
+   - Fixed chart data format (added `->values()` to re-index collection for JavaScript)
+   - Fixed chart X-axis clustering (changed from date labels to run numbers 1-30)
+   - Moved full date/time to tooltips for better UX
+
+   **Test Results:** All 211 tests passing with 489 assertions
+
+   **Benefits:**
+   - Tracks execution time automatically for performance monitoring
+   - Detects hung jobs (started but never finished)
+   - Backward compatible with existing plain ping usage
+   - Visual grid makes it easy to spot issues at a glance
+   - Both detailed chart and simple grid views available
+
 ### Features to Consider
 
 1. **Team Invitations** (deferred from Team Management)
