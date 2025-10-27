@@ -251,45 +251,6 @@ it('limits check-ins to 10 most recent', function () {
     $response->assertDontSee('Task 02');
 });
 
-it('does not display tasks from other teams', function () {
-    // Arrange
-    $userWithAccess = User::factory()->create();
-    $teamWithAccess = Team::factory()->create();
-    $teamWithAccess->users()->attach($userWithAccess);
-
-    $userWithoutAccess = User::factory()->create();
-    $teamWithoutAccess = Team::factory()->create();
-    $teamWithoutAccess->users()->attach($userWithoutAccess);
-
-    $taskWithAccess = ScheduledTask::factory()->create([
-        'team_id' => $teamWithAccess->id,
-        'name' => 'My Task',
-    ]);
-
-    $taskWithoutAccess = ScheduledTask::factory()->create([
-        'team_id' => $teamWithoutAccess->id,
-        'name' => 'Secret Task',
-    ]);
-
-    Alert::factory()->create([
-        'scheduled_task_id' => $taskWithAccess->id,
-        'message' => 'My Alert',
-    ]);
-
-    Alert::factory()->create([
-        'scheduled_task_id' => $taskWithoutAccess->id,
-        'message' => 'Secret Alert',
-    ]);
-
-    // Act
-    $response = $this->actingAs($userWithAccess)->get('/');
-
-    // Assert
-    $response->assertSee('My Task');
-    $response->assertSee('My Alert');
-    $response->assertDontSee('Secret Task');
-    $response->assertDontSee('Secret Alert');
-});
 
 it('has create new task button', function () {
     // Arrange

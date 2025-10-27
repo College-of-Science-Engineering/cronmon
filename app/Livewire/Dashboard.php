@@ -2,18 +2,19 @@
 
 namespace App\Livewire;
 
+use App\Models\Team;
 use App\Models\Alert;
-use App\Models\ScheduledTask;
 use App\Models\TaskRun;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Models\ScheduledTask;
+use Livewire\Attributes\Layout;
 
 class Dashboard extends Component
 {
     #[Layout('components.layouts.app')]
     public function render()
     {
-        $teamIds = auth()->user()->teams()->pluck('teams.id');
+        $teamIds = Team::all()->pluck('id');
 
         // Get counts by status
         $statusCounts = ScheduledTask::whereIn('team_id', $teamIds)

@@ -2,11 +2,12 @@
 
 namespace App\Livewire\ScheduledTasks;
 
-use App\Models\ScheduledTask;
-use Livewire\Attributes\Layout;
+use App\Models\Team;
+use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
-use Livewire\Component;
+use App\Models\ScheduledTask;
+use Livewire\Attributes\Layout;
 
 class Index extends Component
 {
@@ -51,11 +52,11 @@ class Index extends Component
                 $query->where('team_id', $this->team_id);
             });
 
-        $tasks = $query->latest()->get();
+        $tasks = $query->latest('last_checked_in_at')->get();
 
         return view('livewire.scheduled-tasks.index', [
             'tasks' => $tasks,
-            'teams' => auth()->user()->teams,
+            'teams' => Team::orderBy('name')->get(),
         ]);
     }
 }
