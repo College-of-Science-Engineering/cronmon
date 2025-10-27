@@ -54,12 +54,15 @@ Adding optional `?start` and `?finish` query parameters to the ping API endpoint
 - [x] Test: ScheduledTask currentlyRunningTaskRun() method
 - [x] Test: UI displays running status correctly on Show page
 - [x] Update existing ping endpoint tests as needed
-- [ ] Update seeder with realistic start/finish data (optional)
+- [x] Update seeder with realistic start/finish data
 
 ### Code Quality
 - [x] Run `vendor/bin/pint --dirty` for code formatting
 - [x] Run full test suite to ensure no regressions (211 tests, 489 assertions - all passing!)
-- [ ] Manual browser testing of Show page with running/hung tasks
+- [x] Manual browser testing of Show page with running/hung tasks
+
+### Bug Fixes
+- [x] Fix chart data ordering - was showing oldest 30 runs instead of most recent 30 (Show.php:52)
 
 ## Implementation Notes
 

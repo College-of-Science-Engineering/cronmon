@@ -49,9 +49,10 @@ class Show extends Component
     protected function prepareChartData(): array
     {
         $runs = $this->task->taskRuns()
-            ->orderBy('checked_in_at', 'asc')
+            ->orderBy('checked_in_at', 'desc')
             ->limit(30)
-            ->get();
+            ->get()
+            ->reverse(); // Reverse to get chronological order (oldest to newest)
 
         if ($runs->isEmpty()) {
             return [];

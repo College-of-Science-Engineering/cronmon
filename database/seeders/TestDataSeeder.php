@@ -511,6 +511,9 @@ class TestDataSeeder extends Seeder
 
         $interval = $schedule['interval_minutes'];
 
+        // Decide if this task uses start/finish tracking (70% chance)
+        $usesStartFinish = $this->faker->boolean(70);
+
         for ($i = 0; $i < $historyCount; $i++) {
             $checkedAt = $lastCheckIn->copy()->subMinutes($interval * $i);
 
@@ -536,9 +539,37 @@ class TestDataSeeder extends Seeder
                 $expectedAt = $checkedAt;
             }
 
+            // Determine start/finish times if using that feature
+            $startedAt = null;
+            $finishedAt = null;
+            $executionTimeSeconds = null;
+
+            if ($usesStartFinish) {
+                // For currently running task (most recent run, status ok, 5% chance)
+                if ($i === 0 && $status === 'ok' && $this->faker->boolean(5)) {
+                    $startedAt = $checkedAt->copy()->subMinutes($this->faker->numberBetween(2, 30));
+                    // No finish - it's currently running!
+                } else {
+                    // Normal completed run with start/finish
+                    $executionTimeSeconds = $this->executionTimeForTask($task->name);
+                    $startedAt = $checkedAt;
+                    $finishedAt = $checkedAt->copy()->addSeconds($executionTimeSeconds);
+                }
+            }
+
+            // For hung tasks (alerting with most recent run), create incomplete run
+            if ($status === 'alerting' && $i === 0 && $usesStartFinish) {
+                $startedAt = $lastCheckIn->copy()->subMinutes($this->faker->numberBetween(60, 240));
+                $finishedAt = null;
+                $executionTimeSeconds = null;
+            }
+
             TaskRun::create([
                 'scheduled_task_id' => $task->id,
                 'checked_in_at' => $checkedAt,
+                'started_at' => $startedAt,
+                'finished_at' => $finishedAt,
+                'execution_time_seconds' => $executionTimeSeconds,
                 'expected_at' => $expectedAt,
                 'was_late' => $isLate,
                 'lateness_minutes' => $lateness,
@@ -547,13 +578,30 @@ class TestDataSeeder extends Seeder
         }
     }
 
+    protected function executionTimeForTask(string $taskName): int
+    {
+        // Returns execution time in seconds (used for started_at/finished_at)
+        if (Str::contains(Str::lower($taskName), 'backup')) {
+            return $this->faker->numberBetween(120, 900);
+        }
+
+        if (Str::contains(Str::lower($taskName), 'queue')) {
+            return $this->faker->numberBetween(30, 240);
+        }
+
+        if (Str::contains(Str::lower($taskName), 'etl') || Str::contains(Str::lower($taskName), 'sync')) {
+            return $this->faker->numberBetween(180, 1200);
+        }
+
+        return $this->faker->numberBetween(20, 300);
+    }
+
     protected function taskRunPayload(string $taskName, bool $isLate): array
     {
         $status = $isLate ? 'warning' : 'success';
 
         if (Str::contains(Str::lower($taskName), 'backup')) {
             return [
-                'execution_time' => $this->faker->numberBetween(120, 900),
                 'size_mb' => $this->faker->numberBetween(5_000, 25_000),
                 'status' => $status,
             ];
@@ -561,7 +609,6 @@ class TestDataSeeder extends Seeder
 
         if (Str::contains(Str::lower($taskName), 'queue')) {
             return [
-                'execution_time' => $this->faker->numberBetween(30, 240),
                 'jobs_processed' => $this->faker->numberBetween(50, 500),
                 'status' => $status,
             ];
@@ -569,14 +616,12 @@ class TestDataSeeder extends Seeder
 
         if (Str::contains(Str::lower($taskName), 'etl') || Str::contains(Str::lower($taskName), 'sync')) {
             return [
-                'execution_time' => $this->faker->numberBetween(180, 1200),
                 'records_processed' => $this->faker->numberBetween(10_000, 120_000),
                 'status' => $status,
             ];
         }
 
         return [
-            'execution_time' => $this->faker->numberBetween(20, 300),
             'status' => $status,
         ];
     }
