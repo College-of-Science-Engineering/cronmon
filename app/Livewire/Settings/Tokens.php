@@ -14,6 +14,24 @@ class Tokens extends Component
 
     public ?string $plainTextToken = null;
 
+    public bool $showCreateModal = false;
+
+    public function openCreateModal(): void
+    {
+        $this->resetValidation();
+        $this->tokenName = '';
+        $this->plainTextToken = null;
+        $this->showCreateModal = true;
+    }
+
+    public function updatedShowCreateModal(bool $isOpen): void
+    {
+        if (! $isOpen) {
+            $this->resetValidation();
+            $this->reset(['tokenName', 'plainTextToken']);
+        }
+    }
+
     public function createToken(): void
     {
         $this->validate();
@@ -25,13 +43,8 @@ class Tokens extends Component
 
         $this->plainTextToken = $newToken->plainTextToken;
         $this->tokenName = '';
+        $this->showCreateModal = true;
 
-        $this->dispatch('token-created');
-    }
-
-    public function resetPlainTextToken(): void
-    {
-        $this->plainTextToken = null;
     }
 
     public function revokeToken(int $tokenId): void
@@ -42,8 +55,6 @@ class Tokens extends Component
         /** @var PersonalAccessToken $token */
         $token = $user->tokens()->whereKey($tokenId)->firstOrFail();
         $token->delete();
-
-        $this->dispatch('token-revoked');
     }
 
     #[Layout('components.layouts.app')]

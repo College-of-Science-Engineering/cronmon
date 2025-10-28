@@ -27,7 +27,7 @@ it('creates a token and exposes the plain text value once', function () {
     $token = $user->tokens()->where('name', 'Deploy Token')->first();
     expect($token)->not->toBeNull();
 
-    $component->call('resetPlainTextToken');
+    $component->set('showCreateModal', false);
     expect($component->get('plainTextToken'))->toBeNull();
 });
 

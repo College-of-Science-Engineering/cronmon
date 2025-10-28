@@ -3,60 +3,24 @@
 @endphp
 
 <div>
-    <div class="mb-6">
-        <flux:heading size="xl">Settings</flux:heading>
-        <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-            Manage personal access tokens for the Admin API.
-        </flux:text>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
+        <div>
+            <flux:heading size="xl">Settings</flux:heading>
+            <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                Manage personal access tokens for the Admin API.
+            </flux:text>
+        </div>
+        <flux:button
+            wire:click="openCreateModal"
+            icon="key"
+            variant="primary"
+            class="sm:mt-0 sm:self-start"
+        >
+            Generate token
+        </flux:button>
     </div>
 
-    @if($plainTextToken)
-        <flux:callout icon="key" class="mb-6">
-            <flux:heading size="lg">New token created</flux:heading>
-            <flux:text class="mt-3 text-sm text-zinc-600 dark:text-zinc-300">
-                Copy this token now. For security reasons it will not be shown again once hidden.
-            </flux:text>
-            <div class="mt-4">
-                <flux:input readonly value="{{ $plainTextToken }}" class="font-mono text-sm" />
-            </div>
-            <flux:button wire:click="resetPlainTextToken" variant="ghost" class="mt-4">
-                Hide token
-            </flux:button>
-        </flux:callout>
-    @endif
-
-    <div class="grid gap-6 lg:grid-cols-2">
-        <flux:card>
-            <flux:heading size="lg">Create a new token</flux:heading>
-            <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-                Give each token a descriptive name so you can revoke it later without guessing.
-            </flux:text>
-
-            <form wire:submit.prevent="createToken" class="mt-6 space-y-4">
-                <flux:field>
-                    <flux:label for="token-name">Token name</flux:label>
-                    <flux:input id="token-name" wire:model.live="tokenName" placeholder="e.g. Production deploy script" />
-                    <flux:error for="tokenName" />
-                </flux:field>
-
-                <flux:button type="submit" icon="key" class="cursor-pointer">
-                    Generate token
-                </flux:button>
-            </form>
-        </flux:card>
-
-        <flux:card>
-            <flux:heading size="lg">How tokens work</flux:heading>
-            <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-                Use tokens to authenticate requests to the Admin API. Keep them secret and rotate them regularly.
-            </flux:text>
-            <flux:text class="mt-4 text-sm text-zinc-600 dark:text-zinc-300">
-                When a token is revoked, any scripts using it will immediately receive 401 responses.
-            </flux:text>
-        </flux:card>
-    </div>
-
-    <flux:card class="mt-6">
+    <flux:card>
         <div class="flex items-center justify-between">
             <flux:heading size="lg">Active tokens</flux:heading>
             <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
@@ -115,4 +79,61 @@
             </flux:table>
         @endif
     </flux:card>
+
+    <flux:modal variant="flyout" wire:model="showCreateModal">
+        <div class="space-y-6">
+            @if($plainTextToken)
+                <div>
+                    <flux:heading size="lg">Token created</flux:heading>
+                    <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                        Copy this token now. For security reasons it will not be shown again after closing.
+                    </flux:text>
+                </div>
+
+                <flux:input icon="key" value="{{ $plainTextToken }}" readonly copyable class="font-mono text-sm" />
+
+                <flux:text class="text-sm text-zinc-600 dark:text-zinc-300">
+                    Store the token in a secure password manager. Revoke it if it becomes exposed.
+                </flux:text>
+
+                <flux:button
+                    variant="primary"
+                    icon="check"
+                    class="cursor-pointer"
+                    wire:click="$set('showCreateModal', false)"
+                >
+                    Done
+                </flux:button>
+            @else
+                <div>
+                    <flux:heading size="lg">Generate a new token</flux:heading>
+                    <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                        Give each token a descriptive name so you know which integrations are using it.
+                    </flux:text>
+                </div>
+
+                <form wire:submit.prevent="createToken" class="space-y-4">
+                    <flux:field>
+                        <flux:label for="token-name">Token name</flux:label>
+                        <flux:input.group>
+                            <flux:input
+                                id="token-name"
+                                wire:model.live="tokenName"
+                                placeholder="e.g. Production deploy"
+                                class="w-full"
+                            />
+                            <flux:button type="submit" icon="key" class="cursor-pointer">
+                                Create token
+                            </flux:button>
+                        </flux:input.group>
+                        <flux:error for="tokenName" />
+                    </flux:field>
+
+                    <flux:text class="text-sm text-zinc-600 dark:text-zinc-300">
+                        Tokens authenticate requests via the `Authorization: Bearer` header. You can revoke them at any time.
+                    </flux:text>
+                </form>
+            @endif
+        </div>
+    </flux:modal>
 </div>
