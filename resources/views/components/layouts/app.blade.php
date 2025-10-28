@@ -15,7 +15,7 @@
             <flux:sidebar sticky collapsible class="bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-700 print:hidden">
                 <flux:sidebar.header>
                     <flux:sidebar.brand
-                        href="#"                l
+                        href="#"
                         logo="https://fluxui.dev/img/demo/logo.png"
                         logo:dark="https://fluxui.dev/img/demo/dark-mode-logo.png"
                         name="{{  config('app.name') }}"
@@ -30,7 +30,7 @@
                 </flux:sidebar.nav>
                 <flux:sidebar.spacer />
                 <flux:sidebar.nav>
-                    <flux:sidebar.item icon="cog-6-tooth" href="#">Settings</flux:sidebar.item>
+                    <flux:sidebar.item icon="cog-6-tooth" :href="route('settings.tokens')" wire:navigate>Settings</flux:sidebar.item>
                     <flux:sidebar.item icon="information-circle" href="#">Help</flux:sidebar.item>
                 </flux:sidebar.nav>
                 <flux:sidebar.nav>

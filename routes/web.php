@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\PingController;
 use App\Livewire\Dashboard;
 use App\Livewire\ScheduledTasks\Index;
 use App\Livewire\ScheduledTasks\Show;
+use App\Livewire\Settings\Tokens as SettingsTokens;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -14,12 +15,11 @@ use Illuminate\Support\Facades\Route;
 //    if (User::count() != 0) {
 //        Auth::login(User::first());
 //    }
-//}
-require __DIR__ . '/sso-auth.php';
+// }
+require __DIR__.'/sso-auth.php';
 
 // Public API endpoint for check-ins (no authentication required)
 Route::match(['get', 'post'], '/ping/{token}', PingController::class)->name('api.ping');
-
 
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
@@ -30,4 +30,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/teams', \App\Livewire\Teams\Index::class)->name('teams.index');
     Route::get('/teams/create', \App\Livewire\Teams\Create::class)->name('teams.create');
     Route::get('/teams/{team}', \App\Livewire\Teams\Show::class)->name('teams.show');
+
+    Route::get('/settings', SettingsTokens::class)->name('settings.tokens');
 });

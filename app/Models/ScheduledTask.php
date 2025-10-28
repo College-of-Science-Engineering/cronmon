@@ -93,6 +93,33 @@ class ScheduledTask extends Model
         });
     }
 
+    public function scopeSilenced(Builder $query, bool $silenced): Builder
+    {
+        $now = now();
+
+        if ($silenced) {
+            return $query->where(function (Builder $builder) use ($now): void {
+                $builder->where(function (Builder $inner) use ($now): void {
+                    $inner->whereNotNull('alerts_silenced_until')
+                        ->where('alerts_silenced_until', '>', $now);
+                })->orWhereHas('team', function (Builder $teamQuery) use ($now): void {
+                    $teamQuery->whereNotNull('alerts_silenced_until')
+                        ->where('alerts_silenced_until', '>', $now);
+                });
+            });
+        }
+
+        return $query
+            ->where(function (Builder $builder) use ($now): void {
+                $builder->whereNull('alerts_silenced_until')
+                    ->orWhere('alerts_silenced_until', '<=', $now);
+            })
+            ->whereDoesntHave('team', function (Builder $teamQuery) use ($now): void {
+                $teamQuery->whereNotNull('alerts_silenced_until')
+                    ->where('alerts_silenced_until', '>', $now);
+            });
+    }
+
     public function getPingUrl(): string
     {
         return route('api.ping', $this->unique_check_in_token);

@@ -17,6 +17,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('tasks', [ScheduledTaskController::class, 'index'])->name('tasks.index');
         Route::post('tasks', [ScheduledTaskController::class, 'store'])->name('tasks.store');
+        Route::put('tasks/{scheduledTask}', [ScheduledTaskController::class, 'update'])->name('tasks.update');
+        Route::delete('tasks/{scheduledTask}', [ScheduledTaskController::class, 'destroy'])->name('tasks.destroy');
         Route::post('tasks/{scheduledTask}/silence', ScheduledTaskSilenceController::class)->name('tasks.silence');
 
         Route::post('teams/{team}/silence', TeamSilenceController::class)->name('teams.silence');
