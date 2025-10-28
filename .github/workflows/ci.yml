@@ -1,0 +1,402 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_REPOSITORY: ghcr.io/${{ github.repository }}
+  QA_IMAGE: ghcr.io/${{ github.repository }}:qa-${{ github.sha }}
+  PROD_IMAGE: ghcr.io/${{ github.repository }}:prod-${{ github.sha }}
+  STACK_NAME: ${{ vars.STACK_NAME }}
+  TRAEFIK_QA_BACKEND: ${{ vars.TRAEFIK_QA_BACKEND }}
+  TRAEFIK_PROD_BACKEND: ${{ vars.TRAEFIK_PROD_BACKEND }}
+  TRAEFIK_QA_HOSTNAME: ${{ vars.TRAEFIK_QA_HOSTNAME }}
+  TRAEFIK_PROD_HOSTNAME: ${{ vars.TRAEFIK_PROD_HOSTNAME }}
+
+permissions:
+  contents: read
+
+jobs:
+  build_qa:
+    name: Build QA image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push QA image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          target: ci
+          push: true
+          tags: |
+            ${{ env.QA_IMAGE }}
+          build-args: |
+            PHP_VERSION=${{ vars.PHP_VERSION || '8.4.10' }}
+            FLUX_USERNAME=${{ secrets.FLUX_USERNAME }}
+            FLUX_LICENSE_KEY=${{ secrets.FLUX_LICENSE_KEY }}
+
+  unit_tests:
+    name: Run Pest suite
+    needs: build_qa
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ env.QA_IMAGE }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_DATABASE: homestead
+          MYSQL_USER: homestead
+          MYSQL_PASSWORD: secret
+          MYSQL_ROOT_PASSWORD: secret
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd 'mysqladmin ping -hmysql -uroot -psecret'
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: testing
+      MYSQL_DATABASE: homestead
+      MYSQL_USER: homestead
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: secret
+    steps:
+      - name: Prepare test environment
+        working-directory: /var/www/html
+        run: |
+          mkdir -p /run/secrets
+          cp -f .env.gitlab /run/secrets/.env
+          cp -f .env.gitlab .env
+
+      - name: Wait for database
+        working-directory: /var/www/html
+        run: |
+          php -r '
+            $start = time();
+            do {
+              try {
+                new \PDO(\"mysql:host=mysql;port=3306;dbname=homestead\", \"homestead\", \"secret\");
+                exit(0);
+              } catch (\PDOException $e) {
+                if (time() - $start > 60) {
+                  fwrite(STDERR, \"MySQL did not become available: {$e->getMessage()}\\n\");
+                  exit(1);
+                }
+                sleep(2);
+              }
+            } while (true);
+          ';
+
+      - name: Run migrations
+        working-directory: /var/www/html
+        run: |
+          php artisan key:generate --force
+          php artisan config:clear
+          php artisan migrate:fresh --force
+
+      - name: Execute Pest
+        working-directory: /var/www/html
+        run: php ./vendor/bin/pest -c phpunit.github.xml
+
+  lint:
+    name: Pint
+    needs: build_qa
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ env.QA_IMAGE }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Run Pint
+        working-directory: /var/www/html
+        run: php ./vendor/bin/pint --test
+
+  stray_die_dump:
+    name: Stray dd()/dump() check
+    needs: build_qa
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ env.QA_IMAGE }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Scan for dd()/dump()
+        working-directory: /var/www/html
+        run: |
+          if ! egrep -r '[^a-zA-Z](dd\(|dump\()' app; then
+            echo \"No stray dd()/dump() calls found.\"
+          fi
+
+  security_audit:
+    name: Composer audit
+    needs: build_qa
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ env.QA_IMAGE }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Run composer audit
+        working-directory: /var/www/html
+        run: composer audit
+
+  env_key_check:
+    name: Laravel env key check
+    needs: build_qa
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ env.QA_IMAGE }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      QA_DOTENV: ${{ secrets.QA_DOTENV }}
+      PROD_DOTENV: ${{ secrets.PROD_DOTENV }}
+    steps:
+      - name: Check .env keys
+        working-directory: /var/www/html
+        run: |
+          echo \"Checking prod dotenv for keys missing compared to laravel repo\"
+          php docker/env_key_check.php --env-var=PROD_DOTENV
+          echo \"Checking qa dotenv for keys missing compared to laravel repo\"
+          php docker/env_key_check.php --env-var=QA_DOTENV
+
+  env_diff:
+    name: .env.example diff
+    needs: build_qa
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ env.QA_IMAGE }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      QA_DOTENV: ${{ secrets.QA_DOTENV }}
+      PROD_DOTENV: ${{ secrets.PROD_DOTENV }}
+    steps:
+      - name: Generate env diffs
+        id: envdiff
+        working-directory: /var/www/html
+        run: |
+          set +e
+          set +o pipefail
+          cat <<'SCRIPT' > envdiff.sh
+          diff --new-line-format='' --unchanged-line-format='' <(sort \"$1\" | egrep -v '^#' | sed -e 's/=.*//') <(sort \"$2\" | egrep -v '^#' | sed -e 's/=.*//')
+          SCRIPT
+          chmod +x envdiff.sh
+
+          echo \"Checking prod dotenv for keys missing in .env.example\" | tee envdiff.txt
+          printf '%s' \"${PROD_DOTENV}\" > .env
+          ./envdiff.sh .env .env.example | tee -a envdiff.txt
+
+          echo \"Checking .env.example for keys missing in prod dotenv\" | tee -a envdiff.txt
+          printf '%s' \"${PROD_DOTENV}\" > .env
+          ./envdiff.sh .env.example .env | tee -a envdiff.txt
+
+          echo \"Checking qa dotenv for keys missing in .env.example\" | tee -a envdiff.txt
+          printf '%s' \"${QA_DOTENV}\" > .env
+          ./envdiff.sh .env .env.example | tee -a envdiff.txt
+
+          echo \"Checking .env.example for keys missing in qa dotenv\" | tee -a envdiff.txt
+          printf '%s' \"${QA_DOTENV}\" > .env
+          ./envdiff.sh .env.example .env | tee -a envdiff.txt
+
+      - name: Upload env diff artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: envdiff
+          path: /var/www/html/envdiff.txt
+          retention-days: 7
+
+  build_prod:
+    name: Build prod image
+    needs:
+      - unit_tests
+      - lint
+      - stray_die_dump
+      - security_audit
+      - env_key_check
+      - env_diff
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push prod image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          target: prod
+          push: true
+          tags: |
+            ${{ env.PROD_IMAGE }}
+          build-args: |
+            PHP_VERSION=${{ vars.PHP_VERSION || '8.4.10' }}
+            FLUX_USERNAME=${{ secrets.FLUX_USERNAME }}
+            FLUX_LICENSE_KEY=${{ secrets.FLUX_LICENSE_KEY }}
+
+  deploy_qa:
+    name: Deploy QA
+    needs: build_qa
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: qa
+      url: http://${{ env.TRAEFIK_QA_HOSTNAME }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        env:
+          SSH_KEY: ${{ secrets.QA_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${SSH_KEY}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan ${{ secrets.QA_SERVER }} >> ~/.ssh/known_hosts
+
+      - name: Deploy stack
+        env:
+          DOCKER_HOST: ssh://${{ secrets.QA_SSH_USER }}@${{ secrets.QA_SERVER }}
+          DOTENV: ${{ secrets.QA_DOTENV }}
+          IMAGE_NAME: ${{ env.QA_IMAGE }}
+          TRAEFIK_BACKEND: ${{ env.TRAEFIK_QA_BACKEND }}
+          TRAEFIK_HOSTNAME: ${{ env.TRAEFIK_QA_HOSTNAME }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          if [ -z "${STACK_NAME}" ]; then
+            echo "STACK_NAME variable is required"
+            exit 1
+          fi
+          if [ -n "${REGISTRY_USERNAME}" ] && [ -n "${REGISTRY_PASSWORD}" ]; then
+            echo "${REGISTRY_PASSWORD}" | docker login "${REGISTRY}" -u "${REGISTRY_USERNAME}" --password-stdin
+          fi
+          NOW=$(date +%Y-%m-%d-%H-%M-%S)
+          DOTENV_NAME="${{ github.event.repository.name }}-qa-dotenv-${NOW}"
+          printf '%s' "${DOTENV}" | docker secret create "${DOTENV_NAME}" -
+          echo "Deploying stack ${STACK_NAME} image ${IMAGE_NAME} with secret ${DOTENV_NAME}"
+          docker stack deploy -c qa-stack.yml --with-registry-auth --prune "${STACK_NAME}"
+          ./docker/docker-stack-wait.sh "${STACK_NAME}"
+          if [ -n "${DISCORD_WEBHOOK}" ]; then
+            CLEAN_COMMIT_MESSAGE=$(echo "${{ github.event.head_commit.message || github.sha }}" | tr '\n' ' ' | sed 's/\"/\\\"/g')
+            curl -X POST -H "Content-Type: application/json" \
+              -d '{"embeds": [{"title": "'"${STACK_NAME}"' deployed", "description": "'"${CLEAN_COMMIT_MESSAGE}"'", "color": 3447003, "fields": [{"name": "Environment", "value": "qa", "inline": true}, {"name": "Deployed By", "value": "'"${{ github.actor }}"'", "inline": true}], "timestamp": "'"$(date -u +'%Y-%m-%dT%H:%M:%SZ')"'"}]}' \
+              "${DISCORD_WEBHOOK}"
+          fi
+
+  deploy_prod:
+    name: Deploy prod
+    needs: build_prod
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+      url: https://${{ env.TRAEFIK_PROD_HOSTNAME }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        env:
+          SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${SSH_KEY}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan ${{ secrets.PROD_SERVER }} >> ~/.ssh/known_hosts
+
+      - name: Deploy stack
+        env:
+          DOCKER_HOST: ssh://${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SERVER }}
+          DOTENV: ${{ secrets.PROD_DOTENV }}
+          IMAGE_NAME: ${{ env.PROD_IMAGE }}
+          TRAEFIK_BACKEND: ${{ env.TRAEFIK_PROD_BACKEND }}
+          TRAEFIK_HOSTNAME: ${{ env.TRAEFIK_PROD_HOSTNAME }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          if [ -z "${STACK_NAME}" ]; then
+            echo "STACK_NAME variable is required"
+            exit 1
+          fi
+          if [ -n "${REGISTRY_USERNAME}" ] && [ -n "${REGISTRY_PASSWORD}" ]; then
+            echo "${REGISTRY_PASSWORD}" | docker login "${REGISTRY}" -u "${REGISTRY_USERNAME}" --password-stdin
+          fi
+          NOW=$(date +%Y-%m-%d-%H-%M-%S)
+          DOTENV_NAME="${{ github.event.repository.name }}-prod-dotenv-${NOW}"
+          printf '%s' "${DOTENV}" | docker secret create "${DOTENV_NAME}" -
+          echo "Deploying stack ${STACK_NAME} image ${IMAGE_NAME} with secret ${DOTENV_NAME}"
+          docker stack deploy -c prod-stack.yml --with-registry-auth --prune "${STACK_NAME}"
+          ./docker/docker-stack-wait.sh "${STACK_NAME}"
+          if [ -n "${DISCORD_WEBHOOK}" ]; then
+            CLEAN_COMMIT_MESSAGE=$(echo "${{ github.event.head_commit.message || github.sha }}" | tr '\n' ' ' | sed 's/\"/\\\"/g')
+            curl -X POST -H "Content-Type: application/json" \
+              -d '{"embeds": [{"title": "'"${STACK_NAME}"' deployed", "description": "'"${CLEAN_COMMIT_MESSAGE}"'", "color": 3447003, "fields": [{"name": "Environment", "value": "prod", "inline": true}, {"name": "Deployed By", "value": "'"${{ github.actor }}"'", "inline": true}], "timestamp": "'"$(date -u +'%Y-%m-%dT%H:%M:%SZ')"'"}]}' \
+              "${DISCORD_WEBHOOK}"
+          fi
