@@ -13,7 +13,6 @@
         <flux:button
             wire:click="openCreateModal"
             icon="key"
-            variant="primary"
             class="sm:mt-0 sm:self-start"
         >
             Generate token
@@ -80,7 +79,7 @@
         @endif
     </flux:card>
 
-    <flux:modal variant="flyout" wire:model="showCreateModal">
+    <flux:modal variant="flyout" wire:model="showCreateModal" class="w-full sm:w-[28rem]">
         <div class="space-y-6">
             @if($plainTextToken)
                 <div>
@@ -97,7 +96,6 @@
                 </flux:text>
 
                 <flux:button
-                    variant="primary"
                     icon="check"
                     class="cursor-pointer"
                     wire:click="$set('showCreateModal', false)"
