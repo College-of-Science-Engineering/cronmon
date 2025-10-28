@@ -13,7 +13,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {{-- OK Tasks --}}
         <a href="{{ route('tasks.index', ['status' => 'ok']) }}" wire:navigate class="cursor-pointer">
-            <flux:card>
+            <flux:card class="hover:bg-green-50 dark:hover:bg-green-900">
                 <div class="text-center">
                     <div class="text-4xl font-bold mt-2">{{ $okCount }}</div>
                     <flux:text class="mt-2">Tasks running smoothly</flux:text>
@@ -23,7 +23,7 @@
 
         {{-- Alerting Tasks --}}
         <a href="{{ route('tasks.index', ['status' => 'alerting']) }}" wire:navigate class="cursor-pointer">
-            <flux:card>
+            <flux:card class="hover:bg-red-50 dark:hover:bg-red-900">
                 <div class="text-center">
                     <div class="text-4xl font-bold mt-2">{{ $alertingCount }}</div>
                     <flux:text class="mt-2">Tasks need attention</flux:text>
@@ -33,7 +33,7 @@
 
         {{-- Pending Tasks --}}
         <a href="{{ route('tasks.index', ['status' => 'pending']) }}" wire:navigate class="cursor-pointer">
-            <flux:card>
+            <flux:card class="hover:bg-yellow-50 dark:hover:bg-yellow-900">
                 <div class="text-center">
                     <div class="text-4xl font-bold mt-2">{{ $pendingCount }}</div>
                     <flux:text class="mt-2">Never checked in</flux:text>
@@ -43,7 +43,7 @@
 
         {{-- Paused Tasks --}}
         <a href="{{ route('tasks.index', ['status' => 'paused']) }}" wire:navigate class="cursor-pointer">
-            <flux:card>
+            <flux:card class="hover:bg-zinc-50 dark:hover:bg-zinc-900">
                 <div class="text-center">
                     <div class="text-4xl font-bold mt-2">{{ $pausedCount }}</div>
                     <flux:text class="mt-2">Monitoring disabled</flux:text>

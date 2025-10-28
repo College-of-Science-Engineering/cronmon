@@ -15,6 +15,13 @@ services:
       okCodes:
         401
         200
+  alertmanager:
+    type: compose
+    app_mount: false
+    services:
+      image: prom/alertmanager:v0.27.0
+      volumes:
+        - .lando-alertmanager.yml:/etc/alertmanager/alertmanager.yml
 #  meilisearch:
 #    type: compose
 #    app_mount: false
