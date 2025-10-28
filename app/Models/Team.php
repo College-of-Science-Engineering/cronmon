@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Team extends Model
 {
@@ -38,6 +39,13 @@ class Team extends Model
     public function scheduledTasks(): HasMany
     {
         return $this->hasMany(ScheduledTask::class);
+    }
+
+    public function scopeForUser(Builder $query, User $user): Builder
+    {
+        return $query->whereHas('users', function (Builder $usersQuery) use ($user): void {
+            $usersQuery->whereKey($user->getKey());
+        });
     }
 
     public function isPersonalTeam(): bool

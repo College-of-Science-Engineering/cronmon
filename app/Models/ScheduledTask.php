@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -56,6 +58,41 @@ class ScheduledTask extends Model
         return $this->hasMany(Alert::class);
     }
 
+    public function scopeForUser(Builder $query, User $user): Builder
+    {
+        return $query->whereHas('team', function (Builder $teamQuery) use ($user): void {
+            $teamQuery->whereHas('users', function (Builder $usersQuery) use ($user): void {
+                $usersQuery->whereKey($user->getKey());
+            });
+        });
+    }
+
+    public function scopeCheckedBetween(Builder $query, array|string|null $range): Builder
+    {
+        if ($range === null) {
+            return $query;
+        }
+
+        if (is_string($range)) {
+            $range = array_filter(explode(',', $range));
+        }
+
+        [$from, $to] = array_pad($range, 2, null);
+
+        return $query->whereHas('taskRuns', function (Builder $taskRunQuery) use ($from, $to): void {
+            $fromDate = self::normaliseFilterDate($from);
+            $toDate = self::normaliseFilterDate($to);
+
+            if ($fromDate !== null) {
+                $taskRunQuery->where('checked_in_at', '>=', $fromDate);
+            }
+
+            if ($toDate !== null) {
+                $taskRunQuery->where('checked_in_at', '<=', $toDate);
+            }
+        });
+    }
+
     public function getPingUrl(): string
     {
         return route('api.ping', $this->unique_check_in_token);
@@ -87,7 +124,7 @@ class ScheduledTask extends Model
         return null;
     }
 
-    public function getSilencedUntil(): ?\Illuminate\Support\Carbon
+    public function getSilencedUntil(): ?Carbon
     {
         if ($this->alerts_silenced_until !== null && $this->alerts_silenced_until->isFuture()) {
             return $this->alerts_silenced_until;
@@ -107,5 +144,14 @@ class ScheduledTask extends Model
             ->whereNull('finished_at')
             ->latest('started_at')
             ->first();
+    }
+
+    protected static function normaliseFilterDate(?string $value): ?Carbon
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return Carbon::make($value)?->utc();
     }
 }
