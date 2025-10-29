@@ -760,26 +760,17 @@ class TestDataSeeder extends Seeder
             },
         ];
 
+        $baseTimestamp = $this->now->copy()->subDays(120)->startOfDay()->toImmutable();
+        $offsets = [0];
+
+        for ($index = 1; $index < 2000; $index++) {
+            $offsets[] = $offsets[$index - 1] + random_int(45, 120);
+        }
+
         $records = [];
-        $totalRecords = 2000;
-        $timestamp = $this->now->copy()->subDays(120)->startOfDay();
-        $increments = array_merge(
-            [0],
-            array_map(
-                fn () => $this->faker->numberBetween(30, 120),
-                range(1, $totalRecords - 1)
-            )
-        );
 
-        foreach ($increments as $index => $minutes) {
-            if ($minutes > 0) {
-                $timestamp->addMinutes($minutes);
-
-                if ($timestamp->greaterThan($this->now)) {
-                    $timestamp = $this->now->copy();
-                }
-            }
-
+        foreach ($offsets as $offset) {
+            $timestamp = $baseTimestamp->addMinutes($offset);
             $user = $users->random();
             $task = $tasks->random();
             $generator = Arr::random($generators);
@@ -787,8 +778,8 @@ class TestDataSeeder extends Seeder
 
             $records[] = [
                 'message' => $message,
-                'created_at' => $timestamp->toDateTimeString(),
-                'updated_at' => $timestamp->toDateTimeString(),
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
             ];
 
             if (count($records) === 500) {
