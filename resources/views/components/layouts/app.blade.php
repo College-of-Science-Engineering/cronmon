@@ -26,11 +26,11 @@
                     <flux:sidebar.item icon="squares-2x2" :href="route('dashboard')" wire:navigate>Dashboard</flux:sidebar.item>
                     <flux:separator class="my-2" />
                     <flux:sidebar.item icon="list-bullet" :href="route('tasks.index')" wire:navigate>All Tasks</flux:sidebar.item>
-                    <flux:sidebar.item icon="document-text" :href="route('audit-logs.index')" wire:navigate>Audit Log</flux:sidebar.item>
                     <flux:sidebar.item icon="user-group" :href="route('teams.index')" wire:navigate>Teams</flux:sidebar.item>
                 </flux:sidebar.nav>
                 <flux:sidebar.spacer />
                 <flux:sidebar.nav>
+                    <flux:sidebar.item icon="document-text" :href="route('audit-logs.index')" wire:navigate>Audit Log</flux:sidebar.item>
                     <flux:sidebar.item icon="cog-6-tooth" :href="route('settings.tokens')" wire:navigate>Settings</flux:sidebar.item>
                     <flux:sidebar.item icon="information-circle" href="#">Help</flux:sidebar.item>
                 </flux:sidebar.nav>
