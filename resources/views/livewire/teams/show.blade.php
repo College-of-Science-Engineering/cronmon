@@ -25,31 +25,33 @@
             </div>
         </div>
 
-        <div class="mt-6 flex flex-wrap items-end gap-4">
-            <flux:field variant="inline">
-                <flux:label>Silence alerts</flux:label>
-                <flux:switch wire:model.live="silenceEnabled" />
-            </flux:field>
+        @if($canManageSilence)
+            <div class="mt-6 flex flex-wrap items-end gap-4">
+                <flux:field variant="inline">
+                    <flux:label>Silence alerts</flux:label>
+                    <flux:switch wire:model.live="silenceEnabled" />
+                </flux:field>
 
-            @if($silenceEnabled)
-                <flux:select wire:model.live="silenceSelection" class="w-44">
-                    @foreach(\App\Livewire\Teams\Show::SILENCE_OPTIONS as $value => $label)
-                        <flux:select.option value="{{ $value }}">{{ $label }}</flux:select.option>
-                    @endforeach
-                </flux:select>
+                @if($silenceEnabled)
+                    <flux:select wire:model.live="silenceSelection" class="w-44">
+                        @foreach(\App\Livewire\Teams\Show::SILENCE_OPTIONS as $value => $label)
+                            <flux:select.option value="{{ $value }}">{{ $label }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
 
-                @if($silenceSelection === 'custom')
-                    <div class="flex flex-col">
-                        <flux:input
-                            type="datetime-local"
-                            wire:model.lazy="silenceCustomUntil"
-                            :min="now()->setTimezone(config('app.timezone'))->format('Y-m-d\TH:i')"
-                        />
-                        <flux:error name="silenceCustomUntil" />
-                    </div>
+                    @if($silenceSelection === 'custom')
+                        <div class="flex flex-col">
+                            <flux:input
+                                type="datetime-local"
+                                wire:model.lazy="silenceCustomUntil"
+                                :min="now()->setTimezone(config('app.timezone'))->format('Y-m-d\TH:i')"
+                            />
+                            <flux:error name="silenceCustomUntil" />
+                        </div>
+                    @endif
                 @endif
-            @endif
-        </div>
+            </div>
+        @endif
 
         @if($team->isSilenced())
             <flux:text class="mt-2 text-sm text-zinc-500">

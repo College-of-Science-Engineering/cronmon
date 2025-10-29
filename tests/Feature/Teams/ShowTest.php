@@ -262,7 +262,8 @@ it('allows viewing any team even if user is not a member', function () {
     $this->actingAs($user)
         ->get("/teams/{$team->id}")
         ->assertSuccessful()
-        ->assertSee('Other Team');
+        ->assertSee('Other Team')
+        ->assertDontSee('Silence alerts');
 });
 
 it('can silence team alerts from the switch', function () {

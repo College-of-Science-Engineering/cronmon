@@ -30,6 +30,8 @@ class Show extends Component
 
     public bool $silenceEnabled = false;
 
+    public bool $canManageSilence = false;
+
     #[Validate('in:1_hour,6_hours,24_hours,3_days,7_days,custom')]
     public string $silenceSelection = '1_hour';
 
@@ -39,6 +41,7 @@ class Show extends Component
     public function mount(ScheduledTask $task): void
     {
         $this->task = $task;
+        $this->canManageSilence = auth()->user()?->can('update', $task) ?? false;
         $this->synchroniseSilenceState();
     }
 
@@ -51,6 +54,12 @@ class Show extends Component
 
     public function updatedSilenceEnabled(bool $value): void
     {
+        if (! $this->canManageSilence) {
+            $this->silenceEnabled = false;
+
+            return;
+        }
+
         if (! $value) {
             $this->applySilence(null);
 
@@ -65,6 +74,10 @@ class Show extends Component
 
     public function updatedSilenceSelection(string $value): void
     {
+        if (! $this->canManageSilence) {
+            return;
+        }
+
         if (! $this->silenceEnabled) {
             return;
         }
@@ -85,6 +98,10 @@ class Show extends Component
 
     public function updatedSilenceCustomUntil(?string $value): void
     {
+        if (! $this->canManageSilence) {
+            return;
+        }
+
         if (! $this->silenceEnabled || $this->silenceSelection !== 'custom') {
             return;
         }
@@ -107,6 +124,8 @@ class Show extends Component
     #[Layout('components.layouts.app')]
     public function render()
     {
+        $this->canManageSilence = auth()->user()?->can('update', $this->task) ?? false;
+
         $this->task->load([
             'team',
             'creator',
@@ -222,9 +241,9 @@ class Show extends Component
 
         $isTaskSilenced = $this->task->alerts_silenced_until !== null && $this->task->alerts_silenced_until->isFuture();
 
-        $this->silenceEnabled = $isTaskSilenced;
+        $this->silenceEnabled = $this->canManageSilence && $isTaskSilenced;
 
-        if ($isTaskSilenced) {
+        if ($this->canManageSilence && $isTaskSilenced) {
             $this->silenceSelection = 'custom';
             $this->silenceCustomUntil = $this->task->alerts_silenced_until
                 ? $this->task->alerts_silenced_until
