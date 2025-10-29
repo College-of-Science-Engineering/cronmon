@@ -118,9 +118,9 @@ it('creates multiple task runs for multiple pings', function () {
 
     // Act - ping 3 times
     $this->get("/ping/{$task->unique_check_in_token}");
-    sleep(1); // Ensure different timestamps
+    $this->travel(1)->seconds(); // Ensure different timestamps without waiting
     $this->get("/ping/{$task->unique_check_in_token}");
-    sleep(1);
+    $this->travel(1)->seconds();
     $this->get("/ping/{$task->unique_check_in_token}");
 
     // Assert
@@ -312,7 +312,7 @@ it('can ping with finish parameter after start', function () {
 
     // Act - start then finish
     $this->get("/ping/{$task->unique_check_in_token}?start");
-    sleep(2); // Ensure execution time is measurable
+    $this->travel(2)->seconds(); // Ensure execution time is measurable
     $this->get("/ping/{$task->unique_check_in_token}?finish");
 
     // Assert
@@ -363,9 +363,9 @@ it('handles multiple starts without finish', function () {
 
     // Act - send multiple start pings
     $this->get("/ping/{$task->unique_check_in_token}?start");
-    sleep(1);
+    $this->travel(1)->seconds();
     $this->get("/ping/{$task->unique_check_in_token}?start");
-    sleep(1);
+    $this->travel(1)->seconds();
     $this->get("/ping/{$task->unique_check_in_token}?start");
 
     // Assert - should have 3 incomplete TaskRuns
@@ -382,11 +382,11 @@ it('completes most recent start when finish arrives', function () {
 
     // Act - multiple starts, then one finish
     $this->get("/ping/{$task->unique_check_in_token}?start");
-    sleep(1);
+    $this->travel(1)->seconds();
     $this->get("/ping/{$task->unique_check_in_token}?start");
-    sleep(1);
+    $this->travel(1)->seconds();
     $this->get("/ping/{$task->unique_check_in_token}?start");
-    sleep(1);
+    $this->travel(1)->seconds();
     $this->get("/ping/{$task->unique_check_in_token}?finish");
 
     // Assert - only the most recent start should be completed
@@ -409,7 +409,7 @@ it('calculates execution time correctly', function () {
 
     // Act
     $this->get("/ping/{$task->unique_check_in_token}?start");
-    sleep(3);
+    $this->travel(3)->seconds();
     $this->get("/ping/{$task->unique_check_in_token}?finish");
 
     // Assert
