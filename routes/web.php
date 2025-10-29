@@ -1,8 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\PingController;
+use App\Livewire\AuditLogs\Index as AuditLogsIndex;
 use App\Livewire\Dashboard;
-use App\Livewire\ScheduledTasks\Index;
+use App\Livewire\ScheduledTasks\Index as ScheduledTasksIndex;
 use App\Livewire\ScheduledTasks\Show;
 use App\Livewire\Settings\Tokens as SettingsTokens;
 use App\Models\User;
@@ -24,8 +25,10 @@ Route::match(['get', 'post'], '/ping/{token}', PingController::class)->name('api
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
 
-    Route::get('/tasks', Index::class)->name('tasks.index');
+    Route::get('/tasks', ScheduledTasksIndex::class)->name('tasks.index');
     Route::get('/tasks/{task}', Show::class)->name('tasks.show');
+
+    Route::get('/audit-logs', AuditLogsIndex::class)->name('audit-logs.index');
 
     Route::get('/teams', \App\Livewire\Teams\Index::class)->name('teams.index');
     Route::get('/teams/create', \App\Livewire\Teams\Create::class)->name('teams.create');

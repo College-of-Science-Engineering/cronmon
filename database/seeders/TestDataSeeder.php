@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Alert;
+use App\Models\AuditLog;
 use App\Models\ScheduledTask;
 use App\Models\TaskRun;
 use App\Models\Team;
@@ -104,6 +105,7 @@ class TestDataSeeder extends Seeder
         );
 
         $this->applySilencing($schoolTeams, $createdTasks);
+        $this->seedAuditLogs($users, $centralTeams, $schoolTeams);
     }
 
     protected function seedUsers(): Collection
@@ -679,6 +681,137 @@ class TestDataSeeder extends Seeder
                 'message' => "Task '{$task->name}' was paused following repeated misses.",
             ]);
         }
+    }
+
+    protected function seedAuditLogs(Collection $users, Collection $centralTeams, Collection $schoolTeams): void
+    {
+        if ($users->isEmpty()) {
+            return;
+        }
+
+        $tasks = ScheduledTask::with('team', 'creator')->get();
+
+        if ($tasks->isEmpty()) {
+            return;
+        }
+
+        $teams = $centralTeams->merge($schoolTeams)->values();
+
+        if ($teams->isEmpty()) {
+            $teams = Team::with('users')->get();
+        }
+
+        $alerts = Alert::with('scheduledTask.team')->get();
+
+        $generators = [
+            function (User $user, ScheduledTask $task) {
+                return "{$user->full_name} created scheduled task \"{$task->name}\" for {$task->team->name}.";
+            },
+            function (User $user, ScheduledTask $task) {
+                return "{$user->full_name} updated the schedule for \"{$task->name}\" to {$this->auditScheduleSummary($task)}.";
+            },
+            function (User $user, ScheduledTask $task) {
+                return "{$user->full_name} adjusted the grace period for \"{$task->name}\" to {$task->grace_period_minutes} minutes.";
+            },
+            function (User $user, ScheduledTask $task) {
+                return $this->faker->boolean(55)
+                    ? "{$user->full_name} paused \"{$task->name}\" for a planned maintenance window."
+                    : "{$user->full_name} resumed monitoring for \"{$task->name}\" after maintenance.";
+            },
+            function (User $user, ScheduledTask $task) {
+                $hours = $this->faker->numberBetween(1, 12);
+
+                return "{$user->full_name} silenced alerts for \"{$task->name}\" for {$hours} hours.";
+            },
+            function (User $user, ScheduledTask $task) use ($teams, $users) {
+                $team = $teams->random();
+                $memberName = $this->pickTeamMemberName($team, $users);
+
+                return "{$user->full_name} invited {$memberName} to {$team->name}.";
+            },
+            function (User $user, ScheduledTask $task) use ($alerts) {
+                $alert = $alerts->isNotEmpty() ? $alerts->random() : null;
+                $targetTask = $alert?->scheduledTask ?? $task;
+                $type = ucfirst($alert?->alert_type ?? 'missed');
+
+                return "{$user->full_name} acknowledged the {$type} alert for \"{$targetTask->name}\".";
+            },
+            function (User $user, ScheduledTask $task) use ($teams) {
+                $team = $teams->random();
+
+                return "{$user->full_name} exported a status report for {$team->name}.";
+            },
+            function (User $user, ScheduledTask $task) {
+                return "{$user->full_name} rotated an API token used by \"{$task->name}\" integrations.";
+            },
+            function (User $user, ScheduledTask $task) {
+                return "{$user->full_name} triggered a manual check-in for \"{$task->name}\".";
+            },
+            function (User $user, ScheduledTask $task) {
+                return "{$user->full_name} updated the timezone for \"{$task->name}\" to {$task->timezone}.";
+            },
+            function (User $user, ScheduledTask $task) use ($teams) {
+                $destinationTeam = $teams->random();
+                $teamName = $destinationTeam->name === $task->team->name
+                    ? "{$task->team->name} (verified)"
+                    : $destinationTeam->name;
+
+                return "{$user->full_name} reviewed team ownership for \"{$task->name}\" and confirmed {$teamName}.";
+            },
+        ];
+
+        $records = [];
+
+        for ($i = 0; $i < 2000; $i++) {
+            $user = $users->random();
+            $task = $tasks->random();
+            $generator = Arr::random($generators);
+            $message = $generator($user, $task);
+
+            $timestamp = Carbon::instance($this->faker->dateTimeBetween('-120 days', 'now', 'UTC'));
+
+            $records[] = [
+                'message' => $message,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ];
+
+            if (count($records) === 500) {
+                AuditLog::insert($records);
+                $records = [];
+            }
+        }
+
+        if (! empty($records)) {
+            AuditLog::insert($records);
+        }
+    }
+
+    protected function auditScheduleSummary(ScheduledTask $task): string
+    {
+        if ($task->schedule_type === 'cron') {
+            return "cron expression {$task->schedule_value}";
+        }
+
+        return match ($task->schedule_value) {
+            '5m' => 'every 5 minutes',
+            '15m' => 'every 15 minutes',
+            '30m' => 'every 30 minutes',
+            '1h' => 'hourly',
+            '6h' => 'every 6 hours',
+            '12h' => 'every 12 hours',
+            'daily' => 'daily',
+            default => $task->schedule_value,
+        };
+    }
+
+    protected function pickTeamMemberName(Team $team, Collection $users): string
+    {
+        if ($team->relationLoaded('users') && $team->users->isNotEmpty()) {
+            return $team->users->random()->full_name;
+        }
+
+        return $users->random()->full_name;
     }
 
     protected function timezoneForContext(string $context): string
