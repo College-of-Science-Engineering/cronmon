@@ -791,6 +791,26 @@ class TestDataSeeder extends Seeder
         if (! empty($records)) {
             AuditLog::insert($records);
         }
+
+        $recentRecords = [];
+
+        for ($index = 0; $index < 50; $index++) {
+            $timestamp = $this->now->copy()->subMinutes(random_int(0, 6 * 24 * 60));
+            $user = $users->random();
+            $task = $tasks->random();
+            $generator = Arr::random($generators);
+            $message = $generator($user, $task);
+
+            $recentRecords[] = [
+                'message' => $message,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ];
+        }
+
+        if (! empty($recentRecords)) {
+            AuditLog::insert($recentRecords);
+        }
     }
 
     protected function auditScheduleSummary(ScheduledTask $task): string
