@@ -3,6 +3,9 @@
 namespace App\Livewire\AuditLogs;
 
 use App\Models\AuditLog;
+use Flux\DateRange;
+use Flux\DateRangePreset;
+use Flux\DateRangeSynth;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -16,24 +19,52 @@ class Index extends Component
     #[Url(as: 'q')]
     public ?string $search = null;
 
-    public array $dateRange = [];
+    #[Url(as: 'range')]
+    public ?string $rangeQuery = null;
+
+    public ?DateRange $dateRange = null;
 
     protected int $perPage = 100;
+
+    private ?Carbon $earliestLogDate = null;
+
+    private bool $earliestLogResolved = false;
+
+    public function mount(): void
+    {
+        $this->dateRange = $this->dateRangeFromQuery($this->rangeQuery);
+    }
 
     public function updatingSearch(): void
     {
         $this->resetPage();
     }
 
-    public function updatingDateRange(): void
+    public function updatedDateRange(?DateRange $range): void
     {
+        $queryValue = $this->dateRangeToQuery($range);
+
+        if ($this->rangeQuery !== $queryValue) {
+            $this->rangeQuery = $queryValue;
+        }
+
+        $this->resetPage();
+    }
+
+    public function updatedRangeQuery(?string $value): void
+    {
+        if ($value === $this->dateRangeToQuery($this->dateRange)) {
+            return;
+        }
+
+        $this->dateRange = $this->dateRangeFromQuery($value);
         $this->resetPage();
     }
 
     #[Layout('components.layouts.app')]
     public function render()
     {
-        [$startDate, $endDate] = $this->parseDateRange($this->dateRange);
+        [$startDate, $endDate] = $this->dateBounds($this->dateRange);
 
         $logs = AuditLog::query()
             ->when($this->search, function ($query) {
@@ -51,52 +82,124 @@ class Index extends Component
 
         return view('livewire.audit-logs.index', [
             'logs' => $logs,
-            'startDate' => $startDate,
-            'endDate' => $endDate,
         ]);
     }
 
-    private function parseDateRange(array|string|null $range): array
+    private function dateRangeFromQuery(?string $value): ?DateRange
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $data = $this->rangeQueryData($value);
+
+        if (! $data) {
+            return null;
+        }
+
+        return (new DateRangeSynth)->hydrate($data, []);
+    }
+
+    private function dateRangeToQuery(?DateRange $range): ?string
+    {
+        if (! $range) {
+            return null;
+        }
+
+        $preset = $range->preset();
+
+        if ($preset && $preset !== DateRangePreset::Custom) {
+            return $preset->value;
+        }
+
+        $start = $range->start()?->format('Y-m-d');
+        $end = $range->end()?->format('Y-m-d');
+
+        if (! $start && ! $end) {
+            return null;
+        }
+
+        return trim("{$start}/{$end}", '/');
+    }
+
+    private function rangeQueryData(string $value): ?array
+    {
+        $preset = DateRangePreset::tryFrom($value);
+
+        if ($preset && $preset !== DateRangePreset::Custom) {
+            $data = ['preset' => $preset->value];
+
+            if ($preset === DateRangePreset::AllTime) {
+                $start = $this->earliestAuditLogDate();
+
+                $data['start'] = ($start ?? now())->toDateString();
+            }
+
+            return $data;
+        }
+
+        [$start, $end] = array_pad(explode('/', $value, 2), 2, null);
+
+        $start = $this->normaliseDateString($start);
+        $end = $this->normaliseDateString($end);
+
+        if (! $start && ! $end) {
+            return null;
+        }
+
+        $data = [];
+
+        if ($start) {
+            $data['start'] = $start;
+        }
+
+        if ($end) {
+            $data['end'] = $end;
+        }
+
+        return $data;
+    }
+
+    private function normaliseDateString(?string $value): ?string
+    {
+        $trimmed = $value ? trim($value) : null;
+
+        if (! $trimmed) {
+            return null;
+        }
+
+        try {
+            return Carbon::createFromFormat('Y-m-d', $trimmed)->format('Y-m-d');
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function dateBounds(?DateRange $range): array
     {
         if (! $range) {
             return [null, null];
         }
 
-        if (is_array($range)) {
-            $start = $range['start'] ?? null;
-            $end = $range['end'] ?? null;
-        } else {
-            [$start, $end] = array_pad(explode('/', $range, 2), 2, null);
-        }
+        $start = $range->hasStart()
+            ? $range->start()?->copy()->startOfDay()
+            : null;
 
-        $startDate = $this->parseDate($start, fn (Carbon $date) => $date->startOfDay());
-        $endDate = $this->parseDate($end, fn (Carbon $date) => $date->endOfDay());
+        $end = $range->hasEnd()
+            ? $range->end()?->copy()->endOfDay()
+            : null;
 
-        if ($startDate && $endDate && $endDate->lt($startDate)) {
-            return [null, null];
-        }
-
-        return [$startDate, $endDate];
+        return [$start, $end];
     }
 
-    private function parseDate(mixed $date, callable $modifier): ?Carbon
+    private function earliestAuditLogDate(): ?Carbon
     {
-        if ($date instanceof \DateTimeInterface) {
-            $carbon = Carbon::make($date)?->copy();
-
-            return $carbon ? $modifier($carbon) : null;
+        if (! $this->earliestLogResolved) {
+            $timestamp = AuditLog::query()->min('created_at');
+            $this->earliestLogDate = $timestamp ? Carbon::parse($timestamp) : null;
+            $this->earliestLogResolved = true;
         }
 
-        if (! is_string($date) || trim($date) === '') {
-            return null;
-        }
-
-        try {
-            $parsed = Carbon::createFromFormat('Y-m-d', trim($date));
-        } catch (\Throwable) {
-            return null;
-        }
-
-        return $modifier($parsed);
+        return $this->earliestLogDate?->copy();
     }
 }
