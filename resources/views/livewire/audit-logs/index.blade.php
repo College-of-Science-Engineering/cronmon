@@ -10,9 +10,7 @@
                 mode="range"
                 with-presets
                 presets="today yesterday last7Days last30Days thisMonth lastMonth yearToDate allTime"
-                @if($minDate)
-                    min="{{ $minDate }}"
-                @endif
+                :min="$minDate"
             >
                 <flux:date-picker.input placeholder="Filter by date range" clearable />
             </flux:date-picker>
