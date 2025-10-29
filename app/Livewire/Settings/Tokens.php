@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Settings;
 
+use App\Events\SomethingNoteworthyHappened;
 use Laravel\Sanctum\PersonalAccessToken;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -39,7 +40,10 @@ class Tokens extends Component
         /** @var \App\Models\User $user */
         $user = auth()->user();
 
-        $newToken = $user->createToken($this->tokenName);
+        $tokenName = $this->tokenName;
+        $newToken = $user->createToken($tokenName);
+
+        SomethingNoteworthyHappened::dispatch("{$user->full_name} created personal access token {$tokenName}");
 
         $this->plainTextToken = $newToken->plainTextToken;
         $this->tokenName = '';
@@ -54,7 +58,10 @@ class Tokens extends Component
 
         /** @var PersonalAccessToken $token */
         $token = $user->tokens()->whereKey($tokenId)->firstOrFail();
+        $tokenName = $token->name;
         $token->delete();
+
+        SomethingNoteworthyHappened::dispatch("{$user->full_name} revoked personal access token {$tokenName}");
     }
 
     #[Layout('components.layouts.app')]

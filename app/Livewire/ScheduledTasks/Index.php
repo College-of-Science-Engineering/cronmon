@@ -2,12 +2,13 @@
 
 namespace App\Livewire\ScheduledTasks;
 
+use App\Events\SomethingNoteworthyHappened;
+use App\Models\ScheduledTask;
 use App\Models\Team;
-use Livewire\Component;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
-use App\Models\ScheduledTask;
-use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class Index extends Component
 {
@@ -23,6 +24,11 @@ class Index extends Component
     public function delete(ScheduledTask $task): void
     {
         $task->delete();
+
+        $actingUser = auth()->user();
+        $teamName = $task->team()->value('name');
+
+        SomethingNoteworthyHappened::dispatch("{$actingUser->full_name} deleted scheduled task {$task->name} from team {$teamName}");
 
         $this->dispatch('task-deleted');
     }

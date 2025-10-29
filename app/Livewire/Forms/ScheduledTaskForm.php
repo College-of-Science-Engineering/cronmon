@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Forms;
 
+use App\Events\SomethingNoteworthyHappened;
 use App\Models\ScheduledTask;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Validate;
@@ -58,10 +59,17 @@ class ScheduledTaskForm extends Form
                 $team_id ? ['team_id' => $team_id] : []
             ));
 
+            /** @var \App\Models\User $actingUser */
+            $actingUser = auth()->user();
+
+            $this->scheduledTask->load('team');
+
+            SomethingNoteworthyHappened::dispatch("{$actingUser->full_name} updated scheduled task {$this->scheduledTask->name} for team {$this->scheduledTask->team->name}");
+
             return $this->scheduledTask;
         }
 
-        return ScheduledTask::create([
+        $newTask = ScheduledTask::create([
             'team_id' => $team_id ?? auth()->user()->personal_team_id,
             'created_by' => auth()->id(),
             'name' => $this->name,
@@ -73,5 +81,14 @@ class ScheduledTaskForm extends Form
             'unique_check_in_token' => Str::uuid()->toString(),
             'status' => 'pending',
         ]);
+
+        /** @var \App\Models\User $actingUser */
+        $actingUser = auth()->user();
+
+        $newTask->load('team');
+
+        SomethingNoteworthyHappened::dispatch("{$actingUser->full_name} created scheduled task {$newTask->name} for team {$newTask->team->name}");
+
+        return $newTask;
     }
 }

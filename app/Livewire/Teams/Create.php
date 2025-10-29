@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Teams;
 
+use App\Events\SomethingNoteworthyHappened;
 use App\Models\Team;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
@@ -17,12 +18,15 @@ class Create extends Component
     {
         $this->validate();
 
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+
         $slug = Str::slug($this->name);
         $originalSlug = $slug;
         $counter = 1;
 
         while (Team::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
         }
 
@@ -31,7 +35,11 @@ class Create extends Component
             'slug' => $slug,
         ]);
 
-        $team->users()->attach(auth()->id());
+        SomethingNoteworthyHappened::dispatch("{$user->full_name} created team {$team->name}");
+
+        $team->users()->attach($user->getKey());
+
+        SomethingNoteworthyHappened::dispatch("{$user->full_name} joined team {$team->name}");
 
         $this->redirect(route('teams.show', $team), navigate: true);
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\SomethingNoteworthyHappened;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreScheduledTaskRequest;
 use App\Http\Requests\Api\UpdateScheduledTaskRequest;
@@ -81,6 +82,8 @@ class ScheduledTaskController extends Controller
             'status' => 'pending',
         ])->fresh(['team']);
 
+        SomethingNoteworthyHappened::dispatch("{$user->full_name} created scheduled task {$scheduledTask->name} for team {$scheduledTask->team->name}");
+
         return ScheduledTaskResource::make($scheduledTask)
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
@@ -109,6 +112,10 @@ class ScheduledTaskController extends Controller
             'grace_period_minutes' => $validated['grace_period_minutes'],
         ]);
 
+        $scheduledTask->load('team');
+
+        SomethingNoteworthyHappened::dispatch("{$user->full_name} updated scheduled task {$scheduledTask->name} for team {$scheduledTask->team->name}");
+
         return ScheduledTaskResource::make($scheduledTask->fresh('team'))
             ->response();
     }
@@ -117,7 +124,15 @@ class ScheduledTaskController extends Controller
     {
         $this->authorize('delete', $scheduledTask);
 
+        $scheduledTask->loadMissing('team');
+        $taskName = $scheduledTask->name;
+        $teamName = $scheduledTask->team?->name ?? 'unknown team';
+        /** @var \App\Models\User $actingUser */
+        $actingUser = auth()->user();
+
         $scheduledTask->delete();
+
+        SomethingNoteworthyHappened::dispatch("{$actingUser->full_name} deleted scheduled task {$taskName} from team {$teamName}");
 
         return response()->noContent();
     }
