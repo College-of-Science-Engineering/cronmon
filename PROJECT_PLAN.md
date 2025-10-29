@@ -896,6 +896,14 @@ This trust-based approach enables features like:
    - Visual grid makes it easy to spot issues at a glance
    - Both detailed chart and simple grid views available
 
+### Audit Log (Out-of-Plan Change)
+
+- **Architecture:** Domain events dispatch `SomethingNoteworthyHappened` with a human-readable message whenever key user actions occur (team membership changes, scheduled task CRUD/Silence operations, token management, SSO provisioning, etc.).
+- **Listener:** `App\Listeners\RecordAuditLog` implements `ShouldQueue` + `ShouldQueueAfterCommit`, so audit trail writes happen on the queue only after the originating transaction commits. The listener simply persists the message to `audit_logs` via Eloquent.
+- **UI:** `App\Livewire\AuditLogs\Index` renders a Flux-powered table with search, preset/custom date range filters, and pagination. Filters sync to the query string so bookmarks shareable; hydration uses `DateRangeSynth` for Livewire compatibility.
+- **Seed Data:** `TestDataSeeder` backfills ~2,000 historical entries (spanning 4 months) and now injects 50 recent entries within the last six days to keep “Today”/“Yesterday” filters populated.
+- **Testing:** `tests/Feature/AuditLogTest.php` covers event dispatch queuing and listener persistence to guard the pipeline.
+
 ### Features to Consider
 
 1. **Team Invitations** (deferred from Team Management)
