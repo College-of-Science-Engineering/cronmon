@@ -46,23 +46,15 @@
                     @foreach($logs as $log)
                         <flux:table.row :key="$log->id">
                             <flux:table.cell>
-                                <flux:text class="font-mono text-sm text-zinc-500">
-                                    #{{ $log->id }}
-                                </flux:text>
+                                <flux:text variant="strong">#{{ $log->id }}</flux:text>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:text class="text-sm leading-relaxed">
-                                    {{ $log->message }}
-                                </flux:text>
+                                <flux:text>{{ $log->message }}</flux:text>
                             </flux:table.cell>
                             <flux:table.cell>
                                 <div class="text-right">
-                                    <flux:text class="text-sm text-zinc-500">
-                                        {{ $log->created_at->format('Y-m-d H:i:s') }}
-                                    </flux:text>
-                                    <flux:text class="block text-xs text-zinc-400">
-                                        {{ $log->created_at->diffForHumans() }}
-                                    </flux:text>
+                                    <flux:text variant="strong">{{ $log->created_at->format('Y-m-d H:i:s') }}</flux:text>
+                                    <flux:text>{{ $log->created_at->diffForHumans() }}</flux:text>
                                 </div>
                             </flux:table.cell>
                         </flux:table.row>
