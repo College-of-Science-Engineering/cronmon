@@ -16,6 +16,8 @@ class Index extends Component
 {
     use WithPagination;
 
+    private const MIN_DATE = '2025-01-01';
+
     #[Url(as: 'q')]
     public ?string $search = null;
 
@@ -25,10 +27,6 @@ class Index extends Component
     public ?DateRange $dateRange = null;
 
     protected int $perPage = 100;
-
-    private ?Carbon $earliestLogDate = null;
-
-    private bool $earliestLogResolved = false;
 
     public function mount(): void
     {
@@ -82,6 +80,7 @@ class Index extends Component
 
         return view('livewire.audit-logs.index', [
             'logs' => $logs,
+            'minDate' => self::MIN_DATE,
         ]);
     }
 
@@ -130,9 +129,7 @@ class Index extends Component
             $data = ['preset' => $preset->value];
 
             if ($preset === DateRangePreset::AllTime) {
-                $start = $this->earliestAuditLogDate();
-
-                $data['start'] = ($start ?? now())->toDateString();
+                $data['start'] = self::MIN_DATE;
             }
 
             return $data;
@@ -190,16 +187,5 @@ class Index extends Component
             : null;
 
         return [$start, $end];
-    }
-
-    private function earliestAuditLogDate(): ?Carbon
-    {
-        if (! $this->earliestLogResolved) {
-            $timestamp = AuditLog::query()->min('created_at');
-            $this->earliestLogDate = $timestamp ? Carbon::parse($timestamp) : null;
-            $this->earliestLogResolved = true;
-        }
-
-        return $this->earliestLogDate?->copy();
     }
 }
