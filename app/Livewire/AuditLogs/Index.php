@@ -96,7 +96,7 @@ class Index extends Component
             return null;
         }
 
-        return (new DateRangeSynth)->hydrate($data, []);
+        return DateRangeSynth::hydrateFromType(DateRange::class, $data);
     }
 
     private function dateRangeToQuery(?DateRange $range): ?string

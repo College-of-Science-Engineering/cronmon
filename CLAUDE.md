@@ -11,6 +11,8 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - php - 8.4.10
 - laravel/framework (LARAVEL) - v12
 - laravel/prompts (PROMPTS) - v0
+- laravel/sanctum (SANCTUM) - v4
+- laravel/socialite (SOCIALITE) - v5
 - livewire/flux (FLUXUI_FREE) - v2
 - livewire/flux-pro (FLUXUI_PRO) - v2
 - livewire/livewire (LIVEWIRE) - v3
@@ -19,6 +21,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/sail (SAIL) - v1
 - pestphp/pest (PEST) - v4
 - phpunit/phpunit (PHPUNIT) - v12
+- tailwindcss (TAILWINDCSS) - v4
 
 
 ## Conventions
@@ -394,6 +397,74 @@ $pages->assertNoJavascriptErrors()->assertNoConsoleLogs();
 </code-snippet>
 
 
+=== tailwindcss/core rules ===
+
+## Tailwind Core
+
+- Use Tailwind CSS classes to style HTML, check and use existing tailwind conventions within the project before writing your own.
+- Offer to extract repeated patterns into components that match the project's conventions (i.e. Blade, JSX, Vue, etc..)
+- Think through class placement, order, priority, and defaults - remove redundant classes, add classes to parent or child carefully to limit repetition, group elements logically
+- You can use the `search-docs` tool to get exact examples from the official documentation when needed.
+
+### Spacing
+- When listing items, use gap utilities for spacing, don't use margins.
+
+    <code-snippet name="Valid Flex Gap Spacing Example" lang="html">
+        <div class="flex gap-8">
+            <div>Superior</div>
+            <div>Michigan</div>
+            <div>Erie</div>
+        </div>
+    </code-snippet>
+
+
+### Dark Mode
+- If existing pages and components support dark mode, new pages and components must support dark mode in a similar way, typically using `dark:`.
+
+
+=== tailwindcss/v4 rules ===
+
+## Tailwind 4
+
+- Always use Tailwind CSS v4 - do not use the deprecated utilities.
+- `corePlugins` is not supported in Tailwind v4.
+- In Tailwind v4, you import Tailwind using a regular CSS `@import` statement, not using the `@tailwind` directives used in v3:
+
+<code-snippet name="Tailwind v4 Import Tailwind Diff" lang="diff">
+   - @tailwind base;
+   - @tailwind components;
+   - @tailwind utilities;
+   + @import "tailwindcss";
+</code-snippet>
+
+
+### Replaced Utilities
+- Tailwind v4 removed deprecated utilities. Do not use the deprecated option - use the replacement.
+- Opacity values are still numeric.
+
+| Deprecated |	Replacement |
+|------------+--------------|
+| bg-opacity-* | bg-black/* |
+| text-opacity-* | text-black/* |
+| border-opacity-* | border-black/* |
+| divide-opacity-* | divide-black/* |
+| ring-opacity-* | ring-black/* |
+| placeholder-opacity-* | placeholder-black/* |
+| flex-shrink-* | shrink-* |
+| flex-grow-* | grow-* |
+| overflow-ellipsis | text-ellipsis |
+| decoration-slice | box-decoration-slice |
+| decoration-clone | box-decoration-clone |
+
+
+=== tests rules ===
+
+## Test Enforcement
+
+- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
+- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test` with a specific filename or filter.
+
+
 === .ai/team-conventions rules ===
 
 ## Developer Team Guidelines
@@ -430,6 +501,37 @@ Our applications are important but do not contain a lot of data.  So we do not w
 
 We like early returns and guard clauses.  Avoid nesting if statements or using `else` whereever possible.
 
+### Seeding data for local development
+
+When developing locally, we use a seeder called 'TestDataSeeder' to seed the database with data.  This avoids any potential issues with running laravel's default seeder by accident.
+
+So if you have created/modified a model or factory, please check that seeder file matches your changes.
+
+### Eloquent model class conventions
+
+We have a rough convention for the order of functionality in our Eloquent models.  This is :
+
+1. Model boilerplate (eg, the $fillable array)
+2. Lifecycle methods (eg, using the booted method to do some extra work)
+3. Relationships
+4. Scopes
+5. Accessors/Mutators
+6. Custom methods
+
+This convention makes it much easier to navigate the code and find the methods you are looking for.
+
+Also note that we like 'fat models' - helper methods, methods that make the main logic read more naturally - are all fine to put on the model.  Do not abstract to service classes without checking with the user first.  And if there are not existing service classes in the application **NEVER** introduce them unless given explicit permission by the user.
+
+### Livewire component class conventions
+
+Our conventions for livewire components are:
+
+1. Properties and attributes at the top
+1.1. Any properties which are used as filters/search parameters in the component should use the `#[Url]` livewire attribute
+2. The mount() method followed by the render() method
+3. Any lifecycle methods (such as updatedFoo()) next
+4. Any custom methods after all that.
+
 ### Testing style
 
 We like feature tests and rarely write unit.
@@ -443,6 +545,8 @@ We always test the existence of records using the related Eloquent model - not j
 We like our tests to be readable and easy to understand.  We always follow the 'Arrange, Act, Assert' pattern.
 
 We like to use helpful variable names in tests.  For example we might have '$userWithProject' and '$userWithoutProject' to help us understand what is going on in the assertions.
+
+When writing tests and you are getting unexpected results with assertSee or assertDontSee - consider that it might be that Laravels exception page is showing the values in the stack trace or contextual debug into.  Do a quick sanity check using an assertStatus() call or assertHasNoErrors().  If that doesn't help **ask the user for help**.  They can visit the page in the browser and tell you exactly what is happening and even provide you a screenshot.
 
 ### UI styling
 
@@ -464,15 +568,6 @@ Always use the appropriate flux components instead of just <p> and <a> tags. Eg:
    ```
 
 
-**IMPORTANT:** Always use the `flyout` variant for all Flux modal components. This is a team convention.
-
-   ```blade
-   <flux:modal name="example" variant="flyout">
-       <!-- modal content -->
-   </flux:modal>
-   ```
-
-
 ### If in doubt...
 
 The user us always happy to help you out.  Ask questions before you add new logic or change existing code.
@@ -485,4 +580,15 @@ If you are having a problem with a test passing - don't just keep adding code or
 ### The most important thing
 
 Simplicity and readability of the code.  If you read the code and you can't imagine saying it out loud - then we consider it bad code.
+
+### Notes from your past self
+
+• Future-me, read this before you touch the keyboard
+
+  - Start with the most obvious solution that satisfies the spec; don’t add guards, validation, or abstractions unless the user
+    explicitly asks.
+  - Respect the existing guarantees in the stack (Laravel validation, Blade escaping, etc.)—don’t re-implement or double-check them “just in case.”
+  - In **ALL CASES**, simplicity beats “clever” logic every time.
+  - If a requirement says “simple,” take it literally. No defensive programming unless requested.
+  - For ambiguous cases, ask.  THIS IS CRITICAL TO THE USER.
 </laravel-boost-guidelines>
