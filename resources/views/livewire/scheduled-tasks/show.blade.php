@@ -41,6 +41,50 @@
                 </flux:button>
             </div>
         </div>
+
+        <div class="mt-6 flex flex-wrap items-end gap-4">
+            <flux:field variant="inline">
+                <flux:label>Silence alerts</flux:label>
+                <flux:switch wire:model.live="silenceEnabled" />
+            </flux:field>
+
+            @if($silenceEnabled)
+                <flux:select wire:model.live="silenceSelection" class="w-44">
+                    @foreach(\App\Livewire\ScheduledTasks\Show::SILENCE_OPTIONS as $value => $label)
+                        <flux:select.option value="{{ $value }}">{{ $label }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+
+                @if($silenceSelection === 'custom')
+                    <div class="flex flex-col">
+                        <flux:input
+                            type="datetime-local"
+                            wire:model.lazy="silenceCustomUntil"
+                            :min="now()->setTimezone(config('app.timezone'))->format('Y-m-d\TH:i')"
+                        />
+                        <flux:error name="silenceCustomUntil" />
+                    </div>
+                @endif
+            @endif
+        </div>
+
+        @if($task->isSilenced())
+            <flux:text class="mt-2 text-sm text-zinc-500">
+                Alerts silenced
+                @if($task->getSilencedCause() === 'team')
+                    by team until
+                @else
+                    for this task until
+                @endif
+                {{ $task->getSilencedUntil()?->setTimezone(config('app.timezone'))->format('M j, Y g:i A T') }}
+            </flux:text>
+        @endif
+
+        @if(!$silenceEnabled && $task->getSilencedCause() === 'team')
+            <flux:text class="mt-1 text-sm text-amber-500">
+                Team silence overrides task alerts until {{ $task->getSilencedUntil()?->setTimezone(config('app.timezone'))->diffForHumans() }}.
+            </flux:text>
+        @endif
     </div>
 
     {{-- Check-in History --}}

@@ -4,6 +4,7 @@ use App\Livewire\Teams\Show;
 use App\Models\ScheduledTask;
 use App\Models\Team;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Livewire\livewire;
@@ -262,4 +263,62 @@ it('allows viewing any team even if user is not a member', function () {
         ->get("/teams/{$team->id}")
         ->assertSuccessful()
         ->assertSee('Other Team');
+});
+
+it('can silence team alerts from the switch', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($user);
+
+    $this->actingAs($user);
+
+    livewire(Show::class, ['team' => $team])
+        ->set('silenceEnabled', true);
+
+    $silencedUntil = $team->fresh()->alerts_silenced_until;
+
+    expect($silencedUntil)->not->toBeNull()
+        ->and($silencedUntil->isFuture())->toBeTrue();
+});
+
+it('can clear team alert silence', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create([
+        'alerts_silenced_until' => now()->addHours(2),
+    ]);
+    $team->users()->attach($user);
+
+    $this->actingAs($user);
+
+    livewire(Show::class, ['team' => $team])
+        ->set('silenceEnabled', false);
+
+    expect($team->fresh()->alerts_silenced_until)->toBeNull();
+});
+
+it('can set a custom silence window for a team', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($user);
+
+    $customUntilLocal = now()
+        ->addDays(2)
+        ->setTimezone(config('app.timezone'))
+        ->format('Y-m-d\TH:i');
+
+    $this->actingAs($user);
+
+    livewire(Show::class, ['team' => $team])
+        ->set('silenceEnabled', true)
+        ->set('silenceSelection', 'custom')
+        ->set('silenceCustomUntil', $customUntilLocal);
+
+    $stored = $team->fresh()->alerts_silenced_until;
+
+    expect($stored)->not->toBeNull()
+        ->and($stored->format('Y-m-d\TH:i'))->toBe(
+            Carbon::parse($customUntilLocal, config('app.timezone'))
+                ->setTimezone('UTC')
+                ->format('Y-m-d\TH:i')
+        );
 });

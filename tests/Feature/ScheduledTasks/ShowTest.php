@@ -6,6 +6,7 @@ use App\Models\ScheduledTask;
 use App\Models\TaskRun;
 use App\Models\Team;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Livewire\livewire;
@@ -511,4 +512,66 @@ it('api tab displays actual task ping url in all examples', function () {
     // Should appear in API tab (4 examples: basic GET, start, finish, simple cron) = 4 times
     // Note: Start/finish section has 2 curl calls
     expect(substr_count($response->getContent(), $pingUrl))->toBe(6);
+});
+
+it('can silence task alerts from the switch', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($user);
+    $task = ScheduledTask::factory()->create(['team_id' => $team->id]);
+
+    $this->actingAs($user);
+
+    livewire(Show::class, ['task' => $task])
+        ->set('silenceEnabled', true);
+
+    $silencedUntil = $task->fresh()->alerts_silenced_until;
+
+    expect($silencedUntil)->not->toBeNull()
+        ->and($silencedUntil->isFuture())->toBeTrue();
+});
+
+it('can clear task alert silence', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($user);
+    $task = ScheduledTask::factory()->create([
+        'team_id' => $team->id,
+        'alerts_silenced_until' => now()->addHours(3),
+    ]);
+
+    $this->actingAs($user);
+
+    livewire(Show::class, ['task' => $task])
+        ->set('silenceEnabled', false);
+
+    expect($task->fresh()->alerts_silenced_until)->toBeNull();
+});
+
+it('can set a custom silence window for a task', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($user);
+    $task = ScheduledTask::factory()->create(['team_id' => $team->id]);
+
+    $customUntilLocal = now()
+        ->addHours(4)
+        ->setTimezone(config('app.timezone'))
+        ->format('Y-m-d\TH:i');
+
+    $this->actingAs($user);
+
+    livewire(Show::class, ['task' => $task])
+        ->set('silenceEnabled', true)
+        ->set('silenceSelection', 'custom')
+        ->set('silenceCustomUntil', $customUntilLocal);
+
+    $stored = $task->fresh()->alerts_silenced_until;
+
+    expect($stored)->not->toBeNull()
+        ->and($stored->format('Y-m-d\TH:i'))->toBe(
+            Carbon::parse($customUntilLocal, config('app.timezone'))
+                ->setTimezone('UTC')
+                ->format('Y-m-d\TH:i')
+        );
 });
