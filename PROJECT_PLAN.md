@@ -906,6 +906,46 @@ This trust-based approach enables features like:
 - **Seed Data:** `TestDataSeeder` backfills ~2,000 historical entries (spanning 4 months) and now injects 50 recent entries within the last six days to keep “Today”/“Yesterday” filters populated.
 - **Testing:** `tests/Feature/AuditLogTest.php` covers event dispatch queuing and listener persistence to guard the pipeline.
 
+### Recent Improvements (2025-10-30)
+
+8. **Performance & UX Enhancements** ✅ - Complete
+
+   **Audit Log Date Range Bug Fix:**
+   - Fixed TypeError in `AuditLogs\Index` component where `#[Url]` attribute was trying to assign array to typed `DateRange` property
+   - Removed `#[Url]` attribute and manually handle query string sync in `mount()` and `getQueryString()` methods
+   - Date range filtering now works correctly with shareable URLs
+
+   **Scheduled Tasks Pagination:**
+   - Added Livewire `WithPagination` trait to `ScheduledTasks\Index` component
+   - Changed from `->get()` to `->paginate(25)` to load tasks in chunks
+   - Added Flux pagination component to the view
+   - Added `resetPage()` calls when filters change to prevent empty page states
+   - Dramatically improves performance when there are many tasks
+
+   **Teams Index N+1 Query Fix & Personal Team Refactor:**
+   - Fixed N+1 query issue where `$team->isPersonalTeam()` was executing a database query for each team
+   - Refactored personal team identification: added `user_id` foreign key to `teams` table (Laravel convention)
+   - Migration: `add_user_id_to_teams_table` adds nullable `user_id` with foreign key constraint
+   - Updated `Team` model: `user()` now `BelongsTo` relationship, simplified `isPersonalTeam()` to `return $this->user_id !== null`
+   - Updated `User` model lifecycle hook to set `user_id` when creating personal teams
+   - Updated `TeamFactory` with `personal()` state method for tests
+   - Updated `TestDataSeeder` to set `user_id` on personal teams
+   - Eliminates subqueries and makes personal team checks instant
+
+   **Teams Index Filtering:**
+   - Added "Show all personal teams" toggle (Flux switch) to teams index
+   - By default: shows only current user's personal team + all shared teams (much cleaner UI)
+   - When enabled: shows all teams including other users' personal teams
+   - Toggle state syncs to URL query string (`?showAllPersonalTeams=1`)
+   - Simple filtering logic: `whereNull('user_id')->orWhere('user_id', $currentUserId)`
+
+   **Test Coverage:**
+   - Updated `tests/Feature/Teams/IndexTest.php` with 3 new tests:
+     - `it hides other users personal teams by default`
+     - `it shows other users personal teams when toggle is enabled`
+     - `it persists show all personal teams toggle to url`
+   - All 233 tests passing with 558 assertions
+
 ### Features to Consider
 
 1. **Team Invitations** (deferred from Team Management)
