@@ -9,10 +9,11 @@
                 wire:model.live="dateRange"
                 mode="range"
                 with-presets
+                name="dateRange"
                 presets="today yesterday last7Days last30Days thisMonth lastMonth yearToDate allTime"
                 :min="$minDate"
             >
-                <flux:date-picker.input placeholder="Filter by date range" clearable />
+                <flux:date-picker.input placeholder="Filter by date range" clearable name="dateRangeInput" />
             </flux:date-picker>
 
             <div class="sm:w-64">
