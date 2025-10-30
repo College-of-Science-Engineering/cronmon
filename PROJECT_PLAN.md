@@ -28,15 +28,17 @@ Represents a team that owns scheduled tasks. Each user gets a personal team (nam
 
 **Columns:**
 - `id`
+- `user_id` (foreign key to users, nullable) - If set, indicates this is a personal team owned by that user
 - `name` (string) - Team name, e.g., "billy", "Marketing Team"
 - `slug` (string, unique) - URL-friendly identifier
 - `timestamps`
 
 **Relationships:**
-- `belongsToMany(User)` - through `team_user` pivot
+- `belongsTo(User, 'user_id')` - Owner of personal team (null for shared teams)
+- `belongsToMany(User)` - through `team_user` pivot (all members)
 - `hasMany(ScheduledTask)`
 
-**Personal Teams:** If `$team->name === $user->username`, it's a personal team.
+**Personal Teams:** If `$team->user_id !== null`, it's a personal team. The `isPersonalTeam()` helper method checks this.
 
 ### ScheduledTask
 Represents a cron job being monitored.
@@ -925,6 +927,8 @@ This trust-based approach enables features like:
 - Consider caching team memberships for performance
 - Add API rate limiting (even though it's public)
 - Consider adding task tags/categories for organization
+- ~~Optimize Teams Index queries to avoid N+1 issues~~ ✅ Complete (2025-10-30)
+- ~~Add pagination to Scheduled Tasks Index~~ ✅ Complete (2025-10-30)
 
 ### Testing & Documentation
 - ~~Add feature tests for authorization policies~~ ✅ Complete
@@ -934,4 +938,4 @@ This trust-based approach enables features like:
 - When writing tests, cover both the visible outcome and the side effects (e.g., confirm records remain unchanged after validation errors) so regressions can’t hide behind surface-level assertions.
 - API endpoints should lean on form requests for validation, including payload size limits and strict JSON parsing, to avoid accidental abuse (for example, oversized ping payloads).
 
-**Current State:** Phase 1 complete and production-ready! Phase 2 in progress with dashboard, enhanced filtering, API documentation, and full team management complete (175 tests, 382 assertions). Alert management foundation complete (database schema, helper methods, tests). The application successfully monitors cron jobs, detects missed runs, sends alerts, and provides a beautiful, functional UI for management with complete team collaboration features.
+**Current State:** Phase 1 complete and production-ready! Phase 2 in progress with dashboard, enhanced filtering, API documentation, and full team management complete. Alert management foundation complete (database schema, helper methods, tests). Recent performance improvements include pagination on scheduled tasks index, N+1 query elimination on teams index, and improved UX with personal teams filtering. The application successfully monitors cron jobs, detects missed runs, sends alerts, and provides a beautiful, functional UI for management with complete team collaboration features. **All 233 tests passing with 558 assertions** (as of 2025-10-30).
