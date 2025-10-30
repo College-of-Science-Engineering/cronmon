@@ -18,10 +18,28 @@ class Index extends Component
     #[Url(as: 'q')]
     public ?string $search = null;
 
-    #[Url(as: 'range')]
     public ?DateRange $dateRange = null;
 
     protected int $perPage = 100;
+
+    public function mount(): void
+    {
+        $rangeData = request()->query('range');
+        
+        if (is_array($rangeData)) {
+            $preset = $rangeData['preset'] ?? null;
+            
+            if ($preset) {
+                if ($preset === 'allTime') {
+                    $this->dateRange = DateRange::allTime($rangeData['start'] ?? null);
+                } else {
+                    $this->dateRange = DateRange::fromPreset(\Flux\DateRangePreset::from($preset));
+                }
+            } elseif (isset($rangeData['start']) || isset($rangeData['end'])) {
+                $this->dateRange = new DateRange($rangeData['start'] ?? null, $rangeData['end'] ?? null);
+            }
+        }
+    }
 
     public function updatingSearch(): void
     {
@@ -31,6 +49,27 @@ class Index extends Component
     public function updatedDateRange(): void
     {
         $this->resetPage();
+    }
+
+    public function getQueryString(): array
+    {
+        $params = ['q' => ['as' => 'q', 'except' => '']];
+        
+        if ($this->dateRange) {
+            $rangeData = [
+                'start' => $this->dateRange->start()?->format('Y-m-d'),
+                'end' => $this->dateRange->end()?->format('Y-m-d'),
+            ];
+            
+            if ($preset = $this->dateRange->preset()) {
+                $rangeData['preset'] = $preset->value;
+            }
+            
+            $params['range'] = ['as' => 'range', 'except' => null];
+            request()->merge(['range' => $rangeData]);
+        }
+        
+        return $params;
     }
 
     #[Layout('components.layouts.app')]
