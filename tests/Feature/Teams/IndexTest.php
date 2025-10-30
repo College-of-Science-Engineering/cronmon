@@ -88,10 +88,9 @@ it('shows create team button', function () {
         ->assertSee('Create Team');
 });
 
-it('indicates which teams are personal teams', function () {
+it('hides other users personal teams by default', function () {
     // Arrange
     $user = User::factory()->create(['username' => 'johndoe']);
-
     $otherUser = User::factory()->create(['username' => 'janedoe']);
 
     $regularTeam = Team::factory()->create(['name' => 'Engineering']);
@@ -100,7 +99,43 @@ it('indicates which teams are personal teams', function () {
     // Act & Assert
     $this->actingAs($user)
         ->get('/teams')
-        ->assertSeeInOrder(['johndoe', 'Yours', 'janedoe', 'Personal']);
+        ->assertSee('johndoe')
+        ->assertSee('Yours')
+        ->assertSee('Engineering')
+        ->assertDontSee('janedoe'); // Other user's personal team should be hidden
+});
+
+it('shows other users personal teams when toggle is enabled', function () {
+    // Arrange
+    $user = User::factory()->create(['username' => 'johndoe']);
+    $otherUser = User::factory()->create(['username' => 'janedoe']);
+
+    $regularTeam = Team::factory()->create(['name' => 'Engineering']);
+    $regularTeam->users()->attach($user);
+
+    // Act & Assert
+    $this->actingAs($user);
+    
+    livewire(Index::class)
+        ->assertSee('johndoe')
+        ->assertSee('Yours')
+        ->assertDontSee('janedoe')
+        ->set('showAllPersonalTeams', true)
+        ->assertSee('janedoe')
+        ->assertSee('Personal');
+});
+
+it('persists show all personal teams toggle to url', function () {
+    // Arrange
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    // Act & Assert
+    livewire(Index::class)
+        ->set('showAllPersonalTeams', true)
+        ->assertSetStrict('showAllPersonalTeams', true)
+        ->call('$refresh')
+        ->assertSetStrict('showAllPersonalTeams', true);
 });
 
 // Note: Authentication tests skipped - SSO not yet implemented

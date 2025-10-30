@@ -22,6 +22,14 @@ class TeamFactory extends Factory
         return [
             'name' => $name,
             'slug' => Str::slug($name),
+            'user_id' => null,
         ];
+    }
+
+    public function personal(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => \App\Models\User::factory(),
+        ]);
     }
 }

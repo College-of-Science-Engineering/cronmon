@@ -59,9 +59,10 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::created(function (User $user) {
-            $team = $user->personalTeam()->create([
+            $team = Team::create([
                 'name' => $user->username,
                 'slug' => $user->username,
+                'user_id' => $user->id,
             ]);
             $user->teams()->attach($team);
             $user->personal_team_id = $team->id;

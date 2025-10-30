@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -17,6 +18,7 @@ class Team extends Model
     protected $fillable = [
         'name',
         'slug',
+        'user_id',
     ];
 
     protected function casts(): array
@@ -31,9 +33,14 @@ class Team extends Model
         return $this->belongsToMany(User::class);
     }
 
-    public function user(): HasOne
+    public function user(): BelongsTo
     {
-        return $this->hasOne(User::class, 'personal_team_id', 'id');
+        return $this->belongsTo(User::class);
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->user();
     }
 
     public function scheduledTasks(): HasMany
@@ -50,12 +57,12 @@ class Team extends Model
 
     public function isPersonalTeam(): bool
     {
-        return User::where('personal_team_id', $this->id)->exists();
+        return $this->user_id !== null;
     }
 
     public function isPersonalTeamForUser(User $user): bool
     {
-        return $this->id === $user->personal_team_id;
+        return $this->user_id === $user->id;
     }
 
     public function isSilenced(): bool

@@ -2,9 +2,12 @@
     <div class="mb-6">
         <div class="flex items-center justify-between">
             <flux:heading size="xl">Teams</flux:heading>
-            <flux:button :href="route('teams.create')" wire:navigate icon="plus">
-                Create Team
-            </flux:button>
+            <div class="flex items-center gap-4">
+                <flux:switch wire:model.live="showAllPersonalTeams" label="Show all personal teams" />
+                <flux:button :href="route('teams.create')" wire:navigate icon="plus">
+                    Create Team
+                </flux:button>
+            </div>
         </div>
     </div>
 
@@ -38,7 +41,7 @@
                                 </flux:link>
                                 @if($team->id === auth()->user()->personal_team_id)
                                     <flux:badge color="zinc" size="sm">Yours</flux:badge>
-                                @elseif($team->isPersonalTeam())
+                                @elseif($team->user_id)
                                     <flux:badge color="zinc" size="sm">Personal</flux:badge>
                                 @endif
                             </div>

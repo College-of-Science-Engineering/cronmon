@@ -158,6 +158,7 @@ class TestDataSeeder extends Seeder
             $personalTeam = Team::create([
                 'name' => $user->username,
                 'slug' => Str::slug($user->username),
+                'user_id' => $user->id,
             ]);
 
             $user->teams()->attach($personalTeam->id);
