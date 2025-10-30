@@ -323,3 +323,73 @@ it('can set a custom silence window for a team', function () {
                 ->format('Y-m-d\TH:i')
         );
 });
+
+it('can update team name and slug', function () {
+    // Arrange
+    $user = User::factory()->create();
+    $team = Team::factory()->create([
+        'name' => 'Old Team Name',
+        'slug' => 'old-team-name',
+    ]);
+    $team->users()->attach($user);
+
+    // Act
+    $this->actingAs($user);
+    livewire(Show::class, ['team' => $team])
+        ->set('editTeamName', 'New Team Name')
+        ->call('updateTeam');
+
+    // Assert
+    $team->refresh();
+    expect($team->name)->toBe('New Team Name')
+        ->and($team->slug)->toBe('new-team-name');
+});
+
+it('validates team name is required when updating', function () {
+    // Arrange
+    $user = User::factory()->create();
+    $team = Team::factory()->create(['name' => 'Original Name']);
+    $team->users()->attach($user);
+
+    // Act & Assert
+    $this->actingAs($user);
+    livewire(Show::class, ['team' => $team])
+        ->set('editTeamName', '')
+        ->call('updateTeam')
+        ->assertHasErrors('editTeamName');
+
+    expect($team->fresh()->name)->toBe('Original Name');
+});
+
+it('validates team name is unique when updating', function () {
+    // Arrange
+    $user = User::factory()->create();
+    $team = Team::factory()->create(['name' => 'Team A']);
+    $existingTeam = Team::factory()->create(['name' => 'Team B']);
+    $team->users()->attach($user);
+
+    // Act & Assert
+    $this->actingAs($user);
+    livewire(Show::class, ['team' => $team])
+        ->set('editTeamName', 'Team B')
+        ->call('updateTeam')
+        ->assertHasErrors('editTeamName');
+
+    expect($team->fresh()->name)->toBe('Team A');
+});
+
+it('allows updating team name to same name', function () {
+    // Arrange
+    $user = User::factory()->create();
+    $team = Team::factory()->create(['name' => 'Team A']);
+    $team->users()->attach($user);
+
+    // Act & Assert
+    $this->actingAs($user);
+    livewire(Show::class, ['team' => $team])
+        ->set('editTeamName', 'Team A')
+        ->call('updateTeam')
+        ->assertHasNoErrors();
+
+    expect($team->fresh()->name)->toBe('Team A');
+});
