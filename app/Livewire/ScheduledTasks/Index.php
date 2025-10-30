@@ -9,9 +9,12 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class Index extends Component
 {
+    use WithPagination;
+
     #[Url]
     public ?string $status = null;
 
@@ -20,6 +23,8 @@ class Index extends Component
 
     #[Url]
     public bool $myTasksOnly = false;
+
+    protected int $perPage = 25;
 
     public function delete(ScheduledTask $task): void
     {
@@ -36,6 +41,22 @@ class Index extends Component
     public function clearFilter(): void
     {
         $this->status = null;
+        $this->resetPage();
+    }
+
+    public function updatedStatus(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedTeamId(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedMyTasksOnly(): void
+    {
+        $this->resetPage();
     }
 
     #[On('task-saved')]
@@ -47,7 +68,7 @@ class Index extends Component
     #[Layout('components.layouts.app')]
     public function render()
     {
-        $query = ScheduledTask::with(['team', 'creator'])
+        $tasks = ScheduledTask::with(['team', 'creator'])
             ->when($this->myTasksOnly, function ($query) {
                 $query->where('team_id', auth()->user()->personal_team_id);
             })
@@ -56,9 +77,10 @@ class Index extends Component
             })
             ->when($this->team_id, function ($query) {
                 $query->where('team_id', $this->team_id);
-            });
-
-        $tasks = $query->latest('last_checked_in_at')->get();
+            })
+            ->latest('last_checked_in_at')
+            ->paginate(perPage: $this->perPage)
+            ->withQueryString();
 
         return view('livewire.scheduled-tasks.index', [
             'tasks' => $tasks,

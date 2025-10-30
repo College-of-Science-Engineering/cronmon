@@ -107,6 +107,10 @@
                 @endforeach
             </flux:table.rows>
         </flux:table>
+
+        <div class="mt-6">
+            <flux:pagination :paginator="$tasks" />
+        </div>
     @endif
 
     <livewire:scheduled-tasks.task-form-modal />
