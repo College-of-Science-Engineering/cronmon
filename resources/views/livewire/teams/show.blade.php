@@ -8,6 +8,9 @@
                     @if($team->id === auth()->user()->personal_team_id)
                         <flux:badge color="zinc">Personal</flux:badge>
                     @endif
+                    <flux:modal.trigger name="edit-team">
+                        <flux:button variant="ghost" size="sm" icon="pencil" />
+                    </flux:modal.trigger>
                 </div>
                 <flux:text class="text-zinc-500">
                     {{ $team->slug }}
@@ -180,6 +183,25 @@
             @endif
         </flux:card>
     </div>
+
+    {{-- Edit Team Modal --}}
+    <flux:modal name="edit-team" variant="flyout">
+        <form wire:submit="updateTeam" class="space-y-6">
+            <div>
+                <flux:heading size="lg">Edit Team</flux:heading>
+                <flux:text class="mt-2">Update the team name.</flux:text>
+            </div>
+
+            <flux:input wire:model="editTeamName" label="Team Name" />
+
+            <div class="flex items-center gap-3">
+                <flux:button type="submit" variant="primary">Save Changes</flux:button>
+                <flux:modal.close>
+                    <flux:button type="button" variant="ghost">Cancel</flux:button>
+                </flux:modal.close>
+            </div>
+        </form>
+    </flux:modal>
 
     {{-- Migration Modal --}}
     <flux:modal name="migration" wire:model="showMigrationModal" variant="flyout">

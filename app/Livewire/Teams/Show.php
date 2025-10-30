@@ -7,6 +7,7 @@ use App\Models\Team;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -25,6 +26,9 @@ class Show extends Component
     ];
 
     public Team $team;
+
+    #[Validate('required|string|max:255')]
+    public string $editTeamName = '';
 
     #[Validate('required|email|exists:users,email')]
     public string $newMemberEmail = '';
@@ -47,8 +51,32 @@ class Show extends Component
     {
         $this->authorize('view', $team);
         $this->team = $team;
+        $this->editTeamName = $team->name;
         $this->canManageSilence = auth()->user()?->can('update', $team) ?? false;
         $this->synchroniseSilenceState();
+    }
+
+    public function updateTeam(): void
+    {
+        $this->validate([
+            'editTeamName' => [
+                'required',
+                'string',
+                'max:255',
+                'unique:teams,name,'.$this->team->id,
+            ],
+        ]);
+
+        $oldName = $this->team->name;
+        $this->team->name = $this->editTeamName;
+        $this->team->slug = Str::slug($this->editTeamName);
+        $this->team->save();
+
+        /** @var \App\Models\User $actingUser */
+        $actingUser = auth()->user();
+        SomethingNoteworthyHappened::dispatch("{$actingUser->full_name} renamed team from '{$oldName}' to '{$this->team->name}'");
+
+        $this->modal('edit-team')->close();
     }
 
     public function addMember(): void
