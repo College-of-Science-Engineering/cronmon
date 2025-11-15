@@ -129,6 +129,16 @@ it('creates new team when importing', function () {
         'exported_at' => now()->toIso8601String(),
         'exported_by' => 'testuser',
         'data' => [
+            'users' => [
+                [
+                    'username' => 'testuser',
+                    'email' => $user->email,
+                    'forenames' => $user->forenames,
+                    'surname' => $user->surname,
+                    'is_staff' => $user->is_staff,
+                    'is_admin' => $user->is_admin,
+                ],
+            ],
             'teams' => [
                 [
                     'name' => 'New Team',
@@ -164,6 +174,16 @@ it('creates new task when importing', function () {
         'exported_at' => now()->toIso8601String(),
         'exported_by' => 'testuser',
         'data' => [
+            'users' => [
+                [
+                    'username' => 'testuser',
+                    'email' => $user->email,
+                    'forenames' => $user->forenames,
+                    'surname' => $user->surname,
+                    'is_staff' => $user->is_staff,
+                    'is_admin' => $user->is_admin,
+                ],
+            ],
             'teams' => [
                 [
                     'name' => 'Test Team',
@@ -208,6 +228,7 @@ it('handles missing user gracefully', function () {
         'exported_at' => now()->toIso8601String(),
         'exported_by' => 'unknown',
         'data' => [
+            'users' => [],
             'teams' => [
                 [
                     'name' => 'Test Team',
@@ -243,6 +264,16 @@ it('regenerates tokens on import', function () {
         'exported_at' => now()->toIso8601String(),
         'exported_by' => $user->username,
         'data' => [
+            'users' => [
+                [
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'forenames' => $user->forenames,
+                    'surname' => $user->surname,
+                    'is_staff' => $user->is_staff,
+                    'is_admin' => $user->is_admin,
+                ],
+            ],
             'teams' => [
                 [
                     'name' => $team->name,
@@ -285,6 +316,16 @@ it('is idempotent running same import twice', function () {
         'exported_at' => now()->toIso8601String(),
         'exported_by' => 'testuser',
         'data' => [
+            'users' => [
+                [
+                    'username' => 'testuser',
+                    'email' => $user->email,
+                    'forenames' => $user->forenames,
+                    'surname' => $user->surname,
+                    'is_staff' => $user->is_staff,
+                    'is_admin' => $user->is_admin,
+                ],
+            ],
             'teams' => [
                 [
                     'name' => 'Test Team',
@@ -332,6 +373,16 @@ it('preserves personal team relationship', function () {
         'exported_at' => now()->toIso8601String(),
         'exported_by' => 'testuser',
         'data' => [
+            'users' => [
+                [
+                    'username' => 'testuser',
+                    'email' => $user->email,
+                    'forenames' => $user->forenames,
+                    'surname' => $user->surname,
+                    'is_staff' => $user->is_staff,
+                    'is_admin' => $user->is_admin,
+                ],
+            ],
             'teams' => [
                 [
                     'name' => 'testuser',
