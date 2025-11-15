@@ -27,6 +27,7 @@
                     <flux:separator class="my-2" />
                     <flux:sidebar.item icon="list-bullet" :href="route('tasks.index')" wire:navigate>All Tasks</flux:sidebar.item>
                     <flux:sidebar.item icon="user-group" :href="route('teams.index')" wire:navigate>Teams</flux:sidebar.item>
+                    <flux:sidebar.item icon="arrow-path" :href="route('import-export.index')" wire:navigate>Import/Export</flux:sidebar.item>
                 </flux:sidebar.nav>
                 <flux:sidebar.spacer />
                 <flux:sidebar.nav>

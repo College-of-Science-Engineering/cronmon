@@ -3,6 +3,9 @@
 use App\Http\Controllers\Api\PingController;
 use App\Livewire\AuditLogs\Index as AuditLogsIndex;
 use App\Livewire\Dashboard;
+use App\Livewire\ImportExport\Export;
+use App\Livewire\ImportExport\Import;
+use App\Livewire\ImportExport\Index as ImportExportIndex;
 use App\Livewire\ScheduledTasks\Index as ScheduledTasksIndex;
 use App\Livewire\ScheduledTasks\Show;
 use App\Livewire\Settings\Tokens as SettingsTokens;
@@ -33,6 +36,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/teams', \App\Livewire\Teams\Index::class)->name('teams.index');
     Route::get('/teams/create', \App\Livewire\Teams\Create::class)->name('teams.create');
     Route::get('/teams/{team}', \App\Livewire\Teams\Show::class)->name('teams.show');
+
+    Route::get('/import-export', ImportExportIndex::class)->name('import-export.index');
+    Route::get('/import-export/export', Export::class)->name('import-export.export');
+    Route::get('/import-export/import', Import::class)->name('import-export.import');
 
     Route::get('/settings', SettingsTokens::class)->name('settings.tokens');
 });
